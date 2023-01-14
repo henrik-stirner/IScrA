@@ -1,0 +1,12 @@
+[server]
+domain = domain-name.extension
+
+[domain_extension]
+login = /iserv/auth/login
+logout = /iserv/auth/logout
+tasks_csv = /iserv/exercise.csv
+mail = /iserv/mail
+
+# currently unused
+videoconference_load = /iserv/videoconference/api/health
+settings = /iserv/profile/settings

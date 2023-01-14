@@ -1,0 +1,30 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# user-specific
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# venv
+venv/
+
+# log files
+*.log
+*.log.*
+
+# icons from google fonts
+**/assets/icon/*.ico
+
+# private user data
+*.env
+**/iserv_mailer/*.ini
+**/iserv_scraper/*.ini
+
+# **/data/mail/template/html/*.html
+# **/data/mail/template/plaintext/*.txt
+
+**/data/task/*.txt

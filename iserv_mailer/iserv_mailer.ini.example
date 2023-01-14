@@ -1,0 +1,7 @@
+[server]
+domain = domain-name.extension
+
+[port]
+# int
+smtp = 123
+imap = 321

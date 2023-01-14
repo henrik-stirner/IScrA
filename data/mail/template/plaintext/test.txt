@@ -1,0 +1,5 @@
+Dear ${TO_USER},
+This is a test-template for a mailer.
+${SUBSTITUTION}
+Kind regards!
+${FROM_USER}
