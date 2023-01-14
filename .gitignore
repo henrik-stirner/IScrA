@@ -27,4 +27,6 @@ venv/
 # **/data/mail/template/html/*.html
 # **/data/mail/template/plaintext/*.txt
 
+**/data/mail/schedule/schedule.txt
+
 **/data/task/*.txt
