@@ -1,2 +1,0 @@
-Europe/Berlin | 18-03-2023_-_00-00-00 | henrik.stirner | Test | plaintext/test.txt | repeat 00-365-00-00-00 | ./data/mail/template/plaintext/test.txt
-Europe/Berlin | 18-03-2023_-_00-00-00 | henrik.stirner | Test | html/test.html | repeat 00-365-00-00-00 | ./data/mail/template/html/test.html
