@@ -6,7 +6,7 @@ WORK IN PROGRESS
 Make sure to add the missing dotenv and config files.
 - ./.env
 - ./iserv_mailer/iserv_mailer.ini
-- ./iserv_scraper/iserv_scraper.ini)
+- ./iserv_scraper/iserv_scraper.ini
 
 ## Currently supports...
 - ...logging in and out of IServ.
