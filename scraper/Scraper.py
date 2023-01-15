@@ -119,11 +119,11 @@ class Scraper:
             # lazily read from the stream in order to use less memory
             csv_reader = csv.reader(exercise_csv_file.iter_lines(decode_unicode=True), delimiter=';', quotechar='"')
             # write the exercises to a textfile
-            exercise_file = open(f'./data/task/{datetime.now().strftime("%Y-%m-%d_-_%H-%M")}.txt', mode='w')
+            new_exercise_file = open(f'./data/task/{datetime.now().strftime("%Y-%m-%d_-_%H-%M")}.txt', mode='w')
             for index, csv_row in enumerate(csv_reader):
                 # csv_row: ['\ufeff', 'Aufgabe', 'Abgabetermin', 'Rueckmeldungen', 'Tags']
-                exercise_file.write(f'{index} | "{csv_row[1]}" ({csv_row[4]}) bis {csv_row[2]}\n')
-            exercise_file.close()
+                new_exercise_file.write(f'{index} | "{csv_row[1]}" ({csv_row[4]}) bis {csv_row[2]}\n')
+            new_exercise_file.close()
 
         # only keep up to 2 files
         exercise_files = list(filter(
@@ -134,7 +134,6 @@ class Scraper:
 
     def pending_exercises_changed(self) -> str or None:
         """gets currently pending exercises and checks if they have change"""
-
         self.get_pending_exercises()
 
         exercise_files = list(filter(
