@@ -109,42 +109,51 @@ class Scraper:
         # request succeeded
         return True
 
-    def pending_tasks_changed(self) -> str or None:
-        """gets currently pending tasks and checks if they have change"""
+    def get_pending_exercises(self) -> None:
+        """gets currently pending exercises and copies them into a textfile"""
 
-        # copy pending tasks into a text file
+        # copy pending exercises into a text file
         with closing(self._request_session.get(
-                f'https://{config["server"]["domain"]}{config["domain_extension"]["tasks_csv"]}', stream=True)
-        ) as tasks_csv_file:
+                f'https://{config["server"]["domain"]}{config["domain_extension"]["exercise_csv"]}', stream=True)
+        ) as exercise_csv_file:
             # lazily read from the stream in order to use less memory
-            csv_reader = csv.reader(tasks_csv_file.iter_lines(decode_unicode=True), delimiter=';', quotechar='"')
-            # write the tasks to a textfile
-            tasks_file = open(f'./data/task/{datetime.now().strftime("%Y-%m-%d_-_%H-%M")}.txt', mode='w')
+            csv_reader = csv.reader(exercise_csv_file.iter_lines(decode_unicode=True), delimiter=';', quotechar='"')
+            # write the exercises to a textfile
+            exercise_file = open(f'./data/task/{datetime.now().strftime("%Y-%m-%d_-_%H-%M")}.txt', mode='w')
             for index, csv_row in enumerate(csv_reader):
                 # csv_row: ['\ufeff', 'Aufgabe', 'Abgabetermin', 'Rueckmeldungen', 'Tags']
-                tasks_file.write(f'{index} | "{csv_row[1]}" ({csv_row[4]}) bis {csv_row[2]}\n')
-            tasks_file.close()
+                exercise_file.write(f'{index} | "{csv_row[1]}" ({csv_row[4]}) bis {csv_row[2]}\n')
+            exercise_file.close()
 
         # only keep up to 2 files
-        task_files = list(filter(lambda file: file.endswith('.txt'), next(walk('./data/task/'), (None, None, []))[2]))
-        if len(task_files) > 2:
-            for task_file in task_files[0:len(task_files) - 2]:
-                remove(f'./data/task/{task_file}')
+        exercise_files = list(filter(
+            lambda file: file.endswith('.txt'), next(walk('./data/task/'), (None, None, []))[2]))
+        if len(exercise_files) > 2:
+            for exercise_file in exercise_files[0:len(exercise_files) - 2]:
+                remove(f'./data/task/{exercise_file}')
 
-        # compare the latest task files
-        task_files = task_files[len(task_files) - 2:len(task_files)]
+    def pending_exercises_changed(self) -> str or None:
+        """gets currently pending exercises and checks if they have change"""
 
-        old_task_file = open(f'./data/task/{task_files[0]}', mode='r')
-        new_task_file = open(f'./data/task/{task_files[1]}', mode='r')
+        self.get_pending_exercises()
 
-        for old_task in old_task_file:
-            if old_task != new_task_file.readline():
-                old_task_file.close()
-                new_task_file.close()
+        exercise_files = list(filter(
+            lambda file: file.endswith('.txt'), next(walk('./data/task/'), (None, None, []))[2]))
 
-                return path.abspath(f'./data/task/{task_files[1]}')
+        # compare the latest exercise files
+        exercise_files = exercise_files[len(exercise_files) - 2:len(exercise_files)]
 
-        old_task_file.close()
-        new_task_file.close()
+        old_exercise_file = open(f'./data/task/{exercise_files[0]}', mode='r')
+        new_exercise_file = open(f'./data/task/{exercise_files[1]}', mode='r')
+
+        for old_exercise in old_exercise_file:
+            if old_exercise != new_exercise_file.readline():
+                old_exercise_file.close()
+                new_exercise_file.close()
+
+                return path.abspath(f'./data/task/{exercise_files[1]}')
+
+        old_exercise_file.close()
+        new_exercise_file.close()
 
         return

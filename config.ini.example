@@ -9,6 +9,14 @@ imap = 321
 login = /iserv/auth/login
 logout = /iserv/auth/logout
 settings = /iserv/profile/settings
-tasks_csv = /iserv/exercise.csv
+
+exercise = /iserv/exercise
 mail = /iserv/mail
+
+files = /iserv/file/-/Files
+texts = /iserv/etherpad
+
+news = /iserv/news
+
+exercise_csv = /iserv/exercise.csv
 videoconference_load = /iserv/videoconference/api/health

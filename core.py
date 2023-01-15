@@ -212,7 +212,7 @@ def send_and_reschedule_scheduled_mails() -> None:
     del mailer
 
 
-def check_for_new_tasks() -> None:
+def check_for_new_exercises() -> None:
     """
     checks if the users tasks have changed by comparing the currently pending tasks
     to the ones that were saved in a textfile the last time the "pending_tasks_changed()" function was called
@@ -221,18 +221,18 @@ def check_for_new_tasks() -> None:
     """
     scraper = Scraper(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
 
-    if path_to_new_tasks_file := scraper.pending_tasks_changed():
+    if path_to_new_exercise_file := scraper.pending_exercises_changed():
         # inform the user that their pending tasks have changed
-        logger.info('Your pending IServ-tasks have changed!')
+        logger.info('Your pending IServ-exercises have changed!')
         notification.notify(
-            title='IServ Tasks',
-            message=f'Your pending IServ-tasks have changed!',
+            title='IServ Exercises',
+            message=f'Your pending IServ-exercises have changed!',
             app_name='IScrA',
             app_icon='./assets/icon/notification.ico',
             timeout=3,
         )
         # open the new file with a list of the pending tasks
-        startfile(path_to_new_tasks_file)
+        startfile(path_to_new_exercise_file)
 
     scraper.shutdown()
     del scraper
@@ -251,11 +251,11 @@ def test_webdriver() -> None:
 # run
 if __name__ == '__main__':
     # mailer
-    # fetch_unread_mails()
-    # send_and_reschedule_scheduled_mails()
+    fetch_unread_mails()
+    send_and_reschedule_scheduled_mails()
 
     # scraper
-    # check_for_new_tasks()
+    check_for_new_exercises()
 
     # webdriver
     test_webdriver()
