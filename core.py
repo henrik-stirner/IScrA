@@ -10,9 +10,9 @@ import keyring
 
 from plyer import notification
 
-from mailer import IServMailer
-from scraper import IServScraper
-from webdriver import IServWebdriver
+from mailer import Mailer
+from scraper import Scraper
+from webdriver import WebdriverSession
 
 
 # ----------
@@ -102,7 +102,7 @@ if not ISERV_PASSWORD:
 
 def fetch_unread_mails() -> None:
     """check for and lazily fetch unread mails"""
-    mailer = IServMailer(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
+    mailer = Mailer(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
 
     # get the ids of all the unread mails in the inbox
     selection, mail_ids = mailer.get_ids_of_unread_mails()
@@ -142,7 +142,7 @@ def fetch_unread_mails() -> None:
 
 def send_and_reschedule_scheduled_mails() -> None:
     """sEndS aNd ResChEduLEs schEdUleD mAiLs"""
-    mailer = IServMailer(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
+    mailer = Mailer(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
 
     mail_schedule_file = open('./data/mail/schedule/schedule.txt', mode='r', encoding='utf-8')
     new_mail_schedule_file = open('./data/mail/schedule/new_schedule.txt', mode='w', encoding='utf-8')
@@ -219,7 +219,7 @@ def check_for_new_tasks() -> None:
 
     if the tasks changed, the textfile they were saved in will be opened
     """
-    scraper = IServScraper(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
+    scraper = Scraper(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
 
     if path_to_new_tasks_file := scraper.pending_tasks_changed():
         # inform the user that their pending tasks have changed
@@ -240,7 +240,7 @@ def check_for_new_tasks() -> None:
 
 def test_webdriver() -> None:
     """testing"""
-    webdriver = IServWebdriver(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
+    webdriver = WebdriverSession(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
 
     # ...
 

@@ -34,8 +34,8 @@ config.read('config.ini', encoding='utf-8')
 # ----------
 
 
-class IServScraper:
-    """web scraping automations for IServ; NOT AN INTERFACE"""
+class Scraper:
+    """web scraping automations for IServ"""
     def __init__(self, iserv_username: str, iserv_password: str) -> None:
         self._request_session = Session()
         self._csrf_token = None

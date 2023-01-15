@@ -1,1 +1,1 @@
-from webdriver.webdriver import IServWebdriver
+from webdriver.WebdriverSession import WebdriverSession

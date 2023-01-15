@@ -1,1 +1,1 @@
-from mailer.mailer import IServMailer
+from mailer.Mailer import Mailer

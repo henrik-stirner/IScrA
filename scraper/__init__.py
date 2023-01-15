@@ -1,1 +1,1 @@
-from scraper.scraper import IServScraper
+from scraper.Scraper import Scraper

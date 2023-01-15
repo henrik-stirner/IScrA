@@ -3,7 +3,6 @@ from configparser import ConfigParser
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
 from selenium.common.exceptions import TimeoutException, WebDriverException
@@ -31,14 +30,14 @@ config.read('config.ini', encoding='utf-8')
 # ----------
 
 
-class IServWebdriver:
-    """a web driver to automate the usage of IServ; NOT AN INTERFACE"""
+class WebdriverSession:
+    """a webdriver to automate the usage of IServ using Firefox"""
     def __init__(self, iserv_username: str, iserv_password: str, timeout: float = 5.0) -> None:
         self.timeout = timeout
 
         self._webdriver_options = webdriver.FirefoxOptions()
         # TODO: only for debugging
-        self._webdriver_options.headless = True  # no ui
+        # self._webdriver_options.headless = True  # no ui
 
         self._webdriver = webdriver.Firefox(options=self._webdriver_options)
 

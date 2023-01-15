@@ -43,8 +43,8 @@ config.read('config.ini', encoding='utf-8')
 # ----------
 
 
-class IServMailer:
-    """a simple mailer for IServ using smtp and imap; NOT AN INTERFACE"""
+class Mailer:
+    """a simple mailer for IServ using smtp and imap"""
     def __init__(self, iserv_username: str, iserv_password: str) -> None:
         self._iserv_mail_address = f'{iserv_username}@{config["server"]["domain"]}'
 
