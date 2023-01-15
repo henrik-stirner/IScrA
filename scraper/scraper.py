@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 config = ConfigParser()
-config.read('./iserv_scraper/iserv_scraper.ini', encoding='utf-8')
+config.read('config.ini', encoding='utf-8')
 
 
 # ----------
@@ -34,20 +34,17 @@ config.read('./iserv_scraper/iserv_scraper.ini', encoding='utf-8')
 # ----------
 
 
-class LoginFailedException(Exception):
-    pass
-
-
 class IServScraper:
     """web scraping automations for IServ; NOT AN INTERFACE"""
-    def __init__(self, iserv_password: str, iserv_username: str) -> None:
+    def __init__(self, iserv_username: str, iserv_password: str) -> None:
         self._request_session = Session()
         self._csrf_token = None
 
-        # ----------
         # login
-        # ----------
+        self._login(iserv_username, iserv_password)
 
+    def _login(self, iserv_username: str, iserv_password: str) -> bool:
+        """makes this instance of IServScraper login to IServ"""
         # post request
         page = self._request_session.post(
             url=f'https://{config["server"]["domain"]}{config["domain_extension"]["login"]}',
@@ -66,10 +63,12 @@ class IServScraper:
         # TODO: only works if the language is set to German
         elif 'Anmeldung fehlgeschlagen!' in page.text:  # page.text = page.content in utf-8
             # login failed (German text)
-            logger.exception('Failed trying to log into IServ. The username or password is incorrect.')
-            raise LoginFailedException('The username or password is incorrect.')
+            logger.exception('Failed trying to log into IServ. The username or password is invalid.')
+            raise ValueError('The username or password is invalid.')
 
-    def logout(self) -> bool:
+        return True
+
+    def _logout(self) -> bool:
         """makes this instance of IServScraper logout of IServ"""
         page = self._request_session.get(
             url=f'https://{config["server"]["domain"]}{config["domain_extension"]["logout"]}',
@@ -84,6 +83,11 @@ class IServScraper:
 
         # request succeeded
         return True
+
+    def shutdown(self) -> None:
+        """makes this instance of IServScraper logout of IServ and close the request session"""
+        self._logout()
+        self._request_session.close()
 
     def get_csrf_token(self) -> bool:
         """gets the csrf token from the IServ mail page"""

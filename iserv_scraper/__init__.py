@@ -1,1 +1,0 @@
-from iserv_scraper.iserv_scraper import IServScraper

@@ -10,8 +10,9 @@ import keyring
 
 from plyer import notification
 
-from iserv_mailer import IServMailer
-from iserv_scraper import IServScraper
+from mailer import IServMailer
+from scraper import IServScraper
+from webdriver import IServWebdriver
 
 
 # ----------
@@ -99,31 +100,44 @@ if not ISERV_PASSWORD:
 # ----------
 
 
-def check_for_task_updates() -> None:
-    """
-    checks if the users tasks have changed by comparing the currently pending tasks
-    to the ones that were saved in a textfile the last time the "pending_tasks_changed()" function was called
+def fetch_unread_mails() -> None:
+    """check for and lazily fetch unread mails"""
+    mailer = IServMailer(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
 
-    if the tasks changed, the textfile they were saved in will be opened
-    """
+    # get the ids of all the unread mails in the inbox
+    selection, mail_ids = mailer.get_ids_of_unread_mails()
 
-    scraper = IServScraper(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
+    # inform the user about unread mails
+    logger.info(f'There {"are" if len(mail_ids) > 1 else "is"} {len(mail_ids)} unread '
+                f'{"mails" if len(mail_ids) > 1 else "mail"} in your inbox!')
+    notification.notify(
+        title='IServ Mails',
+        message=f'There {"are" if len(mail_ids) > 1 else "is"} {len(mail_ids)} unread '
+                f'{"mails" if len(mail_ids) > 1 else "mail"} in your inbox!',
+        app_name='IScrA',
+        app_icon='./assets/icon/mail.ico',
+        timeout=3,
+    )
 
-    if path_to_new_tasks_file := scraper.pending_tasks_changed():
-        # inform the user that their pending tasks have changed
-        logger.info('Your pending IServ-tasks have changed!')
-        notification.notify(
-            title='IServ Tasks',
-            message=f'Your pending IServ-tasks have changed!',
-            app_name='IScrA',
-            app_icon='./assets/icon/notification.ico',
-            timeout=3,
+    # fetch every unread mail in the inbox
+    logger.info('Fetching unread mail(s)...')
+    for from_user, subject, body in mailer.extract_mail_content_by_id(selection, mail_ids):
+        # "extract_text_by_mail_id()" is a generator
+        # it is not a good idea to download all the unread mails at once and load the into memory
+
+        # log unread mails because I do not want to save them anywhere
+        logger.info(
+            '\n'
+            '====================\n'
+            f'Subject: {subject}\n'
+            f'Sender: {from_user}\n'
+            '----------\n'
+            f'{body}\n'
+            '===================='
         )
-        # open the new file with a list of the pending tasks
-        startfile(path_to_new_tasks_file)
 
-    scraper.logout()
-    del scraper
+    mailer.shutdown()
+    del mailer
 
 
 def send_and_reschedule_scheduled_mails() -> None:
@@ -194,54 +208,54 @@ def send_and_reschedule_scheduled_mails() -> None:
     # replace the old schedule file with the new one
     replace(src='./data/mail/schedule/new_schedule.txt', dst='./data/mail/schedule/schedule.txt')
 
-    mailer.logout()
+    mailer.shutdown()
     del mailer
 
 
-def fetch_unread_mails() -> None:
-    """check for and lazily fetch unread mails"""
-    mailer = IServMailer(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
+def check_for_new_tasks() -> None:
+    """
+    checks if the users tasks have changed by comparing the currently pending tasks
+    to the ones that were saved in a textfile the last time the "pending_tasks_changed()" function was called
 
-    # get the ids of all the unread mails in the inbox
-    selection, mail_ids = mailer.get_ids_of_unread_mails()
+    if the tasks changed, the textfile they were saved in will be opened
+    """
+    scraper = IServScraper(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
 
-    # inform the user about unread mails
-    logger.info(f'There {"are" if len(mail_ids) > 1 else "is"} {len(mail_ids)} unread '
-                f'{"mails" if len(mail_ids) > 1 else "mail"} in your inbox!')
-    notification.notify(
-        title='IServ Mails',
-        message=f'There {"are" if len(mail_ids) > 1 else "is"} {len(mail_ids)} unread '
-                f'{"mails" if len(mail_ids) > 1 else "mail"} in your inbox!',
-        app_name='IScrA',
-        app_icon='./assets/icon/mail.ico',
-        timeout=3,
-    )
-
-    # fetch every unread mail in the inbox
-    logger.info('Fetching unread mail(s)...')
-    for from_user, subject, body in mailer.extract_mail_content_by_id(selection, mail_ids):
-        # "extract_text_by_mail_id()" is a generator
-        # it is not a good idea to download all the unread mails at once and load the into memory
-
-        # log unread mails because I do not want to save them anywhere
-        logger.info(
-            '\n'
-            '====================\n'
-            f'Subject: {subject}\n'
-            f'Sender: {from_user}\n'
-            '----------\n'
-            f'{body}\n'
-            '===================='
+    if path_to_new_tasks_file := scraper.pending_tasks_changed():
+        # inform the user that their pending tasks have changed
+        logger.info('Your pending IServ-tasks have changed!')
+        notification.notify(
+            title='IServ Tasks',
+            message=f'Your pending IServ-tasks have changed!',
+            app_name='IScrA',
+            app_icon='./assets/icon/notification.ico',
+            timeout=3,
         )
+        # open the new file with a list of the pending tasks
+        startfile(path_to_new_tasks_file)
 
-    mailer.logout()
-    del mailer
+    scraper.shutdown()
+    del scraper
+
+
+def test_webdriver() -> None:
+    """testing"""
+    webdriver = IServWebdriver(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
+
+    # ...
+
+    webdriver.shutdown()
+    del webdriver
 
 
 # run
 if __name__ == '__main__':
-    # scraper
-    check_for_task_updates()
     # mailer
-    send_and_reschedule_scheduled_mails()
-    fetch_unread_mails()
+    # fetch_unread_mails()
+    # send_and_reschedule_scheduled_mails()
+
+    # scraper
+    # check_for_new_tasks()
+
+    # webdriver
+    test_webdriver()

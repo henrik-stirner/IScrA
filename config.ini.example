@@ -1,12 +1,14 @@
 [server]
 domain = domain-name.extension
 
+[port]
+smtp = 123
+imap = 321
+
 [domain_extension]
 login = /iserv/auth/login
 logout = /iserv/auth/logout
+settings = /iserv/profile/settings
 tasks_csv = /iserv/exercise.csv
 mail = /iserv/mail
-
-# currently unused
 videoconference_load = /iserv/videoconference/api/health
-settings = /iserv/profile/settings

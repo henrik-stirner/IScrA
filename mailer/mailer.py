@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 config = ConfigParser()
-config.read('./iserv_mailer/iserv_mailer.ini', encoding='utf-8')
+config.read('config.ini', encoding='utf-8')
 
 
 # ----------
@@ -49,7 +49,7 @@ class IServMailer:
         self._iserv_mail_address = f'{iserv_username}@{config["server"]["domain"]}'
 
         # ----------
-        # login
+        # establish connections and login
         # ----------
 
         # smtp connection
@@ -68,31 +68,31 @@ class IServMailer:
 
         with open('./data/mail/extension/plaintext/preamble.txt', mode='r', encoding='utf-8'
                   ) as plaintext_preamble_file:
-            self.mail_preamble_plaintext = Template(plaintext_preamble_file.read()).substitute(  # substitutions
+            self._mail_preamble_plaintext = Template(plaintext_preamble_file.read()).substitute(  # substitutions
                 {}
             )
             plaintext_preamble_file.close()
 
         with open('./data/mail/extension/plaintext/epilogue.txt', mode='r', encoding='utf-8'
                   ) as plaintext_epilogue_file:
-            self.mail_epilogue_plaintext = Template(plaintext_epilogue_file.read()).substitute(  # substitutions
+            self._mail_epilogue_plaintext = Template(plaintext_epilogue_file.read()).substitute(  # substitutions
                 TIMESTAMP=datetime.now().strftime("%Y-%m-%d | %H-%M")
             )
             plaintext_epilogue_file.close()
 
         with open('./data/mail/extension/html/preamble.html', mode='r', encoding='utf-8') as html_preamble_file:
-            self.mail_preamble_html = Template(html_preamble_file.read()).substitute(  # substitutions
+            self._mail_preamble_html = Template(html_preamble_file.read()).substitute(  # substitutions
                 {}
             )
             html_preamble_file.close()
 
         with open('./data/mail/extension/html/epilogue.html', mode='r', encoding='utf-8') as html_epilogue_file:
-            self.mail_epilogue_html = Template(html_epilogue_file.read()).substitute(  # substitutions
+            self._mail_epilogue_html = Template(html_epilogue_file.read()).substitute(  # substitutions
                 TIMESTAMP=datetime.now().strftime("%Y-%m-%d | %H-%M")
             )
             html_epilogue_file.close()
 
-    def logout(self) -> None:
+    def shutdown(self) -> None:
         """makes this instance of IServMailer logout and close all connections"""
         # smtp connection
         self._smtp_connection.quit()
@@ -110,7 +110,7 @@ class IServMailer:
     # ----------
 
     @staticmethod
-    def attach_files(to_message: MIMEMultipart, files_to_attach: list) -> None:
+    def _attach_files(to_message: MIMEMultipart, files_to_attach: list) -> None:
         """attach files to a given MIME multipart"""
         for file_to_attach in files_to_attach:
             content_type, encoding = mimetypes.guess_type(file_to_attach)
@@ -164,16 +164,16 @@ class IServMailer:
 
         if formatted_body:
             # add the preamble and epilogue to the body of the mail
-            body = self.mail_preamble_html + body + self.mail_epilogue_html
+            body = self._mail_preamble_html + body + self._mail_epilogue_html
             # attach the body to the mail
             message.attach(MIMEText(body, 'html'))
         else:
-            body = self.mail_preamble_plaintext + body + self.mail_epilogue_plaintext
+            body = self._mail_preamble_plaintext + body + self._mail_epilogue_plaintext
             # attach the body to the mail
             message.attach(MIMEText(body, 'plain'))
 
         # attachments
-        self.attach_files(message, attachments)
+        self._attach_files(message, attachments)
 
         # send the mail
         self._smtp_connection.send_message(message)

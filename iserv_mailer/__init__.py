@@ -1,1 +1,0 @@
-from iserv_mailer.iserv_mailer import IServMailer

@@ -21,8 +21,7 @@ venv/
 
 # private user data
 *.env
-**/iserv_mailer/*.ini
-**/iserv_scraper/*.ini
+*.ini
 
 # **/data/mail/template/html/*.html
 # **/data/mail/template/plaintext/*.txt

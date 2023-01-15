@@ -3,17 +3,15 @@
 WORK IN PROGRESS
 
 # IScrA - IServ Scraping Automations
-Make sure to add the missing dotenv and config files.
-- ./.env
-- ./iserv_mailer/iserv_mailer.ini
-- ./iserv_scraper/iserv_scraper.ini
+Make sure to add the missing dotenv and config file before running.
 
-## Currently supports...
-- ...logging in and out of IServ.
-- ...retrieving the users csrf token.
-- ...checking if new tasks have been assigned.
-- ...sending and scheduling mails.
-  - using SMTP
-  - Scheduled mails are sent only when the corresponding function is executed. <br/>The program does not run in the background.
-- ...fetching received mails.
-  - using IMAP4
+## Features
+- #### webdriver
+  - logging in and out of IServ
+- #### mailer
+  - sending (scheduled) mails using SMTP
+  - fetching received mails using IMAP4
+- #### scraper
+  - logging in and out of IServ
+  - retrieving the users csrf token
+  - checking if new tasks have been assigned
