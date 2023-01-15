@@ -14,4 +14,5 @@ Make sure to add the missing dotenv and config file before running.
 - #### scraper
   - logging in and out of IServ
   - retrieving the users csrf token
-  - checking if new tasks have been assigned
+  - fetching pending exercises
+  - checking if new exercises have been assigned

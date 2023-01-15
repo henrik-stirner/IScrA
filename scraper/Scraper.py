@@ -11,6 +11,8 @@ from bs4 import BeautifulSoup
 from contextlib import closing
 import csv
 
+import json
+
 
 # ----------
 # logger
@@ -156,3 +158,9 @@ class Scraper:
         new_exercise_file.close()
 
         return
+
+    def get_global_videoconference_system_load(self) -> dict:
+        """gets the current load of iserv's global videoconference system"""
+        return self._request_session.get(
+            f'https://{config["server"]["domain"]}{config["domain_extension"]["videoconference_load"]}'
+        ).json()

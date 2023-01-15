@@ -251,11 +251,11 @@ def test_webdriver() -> None:
 # run
 if __name__ == '__main__':
     # mailer
-    fetch_unread_mails()
-    send_and_reschedule_scheduled_mails()
+    # fetch_unread_mails()
+    # send_and_reschedule_scheduled_mails()
 
     # scraper
-    check_for_new_exercises()
+    # check_for_new_exercises()
 
     # webdriver
     test_webdriver()
