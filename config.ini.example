@@ -10,13 +10,15 @@ login = /iserv/auth/login
 logout = /iserv/auth/logout
 settings = /iserv/profile/settings
 
-files = /iserv/file/-/Files
-group_files = /iserv/file/-/Groups
-filesystem_local = /iserv/fs/file/local/Files
-filesystem_local_download = /iserv/fs/download/local/Files
 
-filesystem = /iserv/fs/file
+files = /iserv/file/-
+files_user_ext = /Files
+files_group_ext = /Groups
+files_show_page_ext = ?show=true
+
+filesystem_display = /iserv/fs/file
 filesystem_download = /iserv/fs/download
+filesystem_local_ext = /local
 
 text = /iserv/etherpad
 
