@@ -115,5 +115,5 @@ class Text:
         return self.title == other.title and self.owner == other.owner and self.creation_date == other.creation_date
 
     def __repr__(self) -> str:
-        return f'<IScrA.webdriver.element.Text (title={self.title}, owner={self.owner}, ' \
-               f'creation_date={self.creation_date})>'
+        return f'<IScrA.webdriver.element.Text.Text (title="{self.title}", owner="{self.owner}", ' \
+               f'creation_date="{self.creation_date}")>'

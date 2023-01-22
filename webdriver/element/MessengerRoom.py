@@ -71,5 +71,5 @@ class MessengerRoom:
             self.name == other.name
 
     def __repr__(self) -> str:
-        return f'<IScrA.webdriver.element.MessengerRoom (token={self.token}, owner={self.owner}, ' \
-               f'is_group={self.is_group}, name={self.name}>'
+        return f'<IScrA.webdriver.element.MessengerRoom.MessengerRoom (token="{self.token}", owner="{self.owner}", ' \
+               f'is_group="{self.is_group}", name="{self.name}">'

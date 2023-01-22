@@ -238,5 +238,5 @@ class Exercise:
             self.start_date == other.start_date and self.deadline == other.deadline
 
     def __repr__(self) -> str:
-        return f'<IScrA.webdriver.element.Exercise (title={self.title}, owner={self.owner}, subject={self.subject}, ' \
-               f'start_date={self.start_date}, deadline={self.deadline})>'
+        return f'<IScrA.webdriver.element.Exercise.Exercise (title="{self.title}", owner="{self.owner}", ' \
+               f'subject="{self.subject}", start_date="{self.start_date}", deadline="{self.deadline}")>'

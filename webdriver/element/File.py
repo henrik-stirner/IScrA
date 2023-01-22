@@ -195,5 +195,5 @@ class File:
             self.remote_locations == other.remote_locations and self.size == other.size
 
     def __repr__(self) -> str:
-        return f'<IScrA.webdriver.element.File (name={self.name}, owner={self.owner}, type={self.type}, ' \
-               f'remote_location={self.remote_locations}, size={self.size})>'
+        return f'<IScrA.webdriver.element.File.File (name="{self.name}", owner="{self.owner}", type="{self.type}", ' \
+               f'remote_location="{self.remote_locations}", size="{self.size}")>'
