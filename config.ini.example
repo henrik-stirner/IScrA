@@ -10,13 +10,49 @@ login = /iserv/auth/login
 logout = /iserv/auth/logout
 settings = /iserv/profile/settings
 
-exercise = /iserv/exercise
-mail = /iserv/mail
-
 files = /iserv/file/-/Files
-texts = /iserv/etherpad
+group_files = /iserv/file/-/Groups
+filesystem_local = /iserv/fs/file/local/Files
+filesystem_local_download = /iserv/fs/download/local/Files
+
+filesystem = /iserv/fs/file
+filesystem_download = /iserv/fs/download
+
+text = /iserv/etherpad
+
+exercise = /iserv/exercise
+exercise_past = /iserv/exercise/past/exercise
+exercise_csv = /iserv/exercise.csv
+
+mail = /iserv/mail
+messenger = /iserv/messenger/
+messenger_room = /iserv/messenger/room
+
+videoconference_load = /iserv/videoconference/api/health
 
 news = /iserv/news
 
-exercise_csv = /iserv/exercise.csv
-videoconference_load = /iserv/videoconference/api/health
+[path]
+data = ./data
+
+mail = ./data/mail
+
+mail_extension = ./data/mail/extension
+# plaintext and html subdirectories are mandatory
+mail_extension_plaintext = ./data/mail/extension/plaintext
+mail_extension_html = ./data/mail/extension/html
+
+mail_template = ./data/mail/template
+# plaintext and html subdirectories are mandatory
+mail_template_plaintext = ./data/mail/template/plaintext
+mail_template_html = ./data/mail/template/html
+
+mail_schedule = ./data/mail/schedule
+
+exercises = ./data/exercises
+exercise = ./data/exercises/exercise
+
+texts = ./data/texts
+
+# filesystem will be a root directory of directories and files in the users IServ filesystem
+filesystem = ./data/filesystem

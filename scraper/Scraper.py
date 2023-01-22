@@ -121,7 +121,8 @@ class Scraper:
             # lazily read from the stream in order to use less memory
             csv_reader = csv.reader(exercise_csv_file.iter_lines(decode_unicode=True), delimiter=';', quotechar='"')
             # write the exercises to a textfile
-            new_exercise_file = open(f'./data/task/{datetime.now().strftime("%Y-%m-%d_-_%H-%M")}.txt', mode='w')
+            new_exercise_file = open(
+                f'{config["path"]["exercises"]}/{datetime.now().strftime("%Y-%m-%d_-_%H-%M")}.txt', mode='w')
             for index, csv_row in enumerate(csv_reader):
                 # csv_row: ['\ufeff', 'Aufgabe', 'Abgabetermin', 'Rueckmeldungen', 'Tags']
                 new_exercise_file.write(f'{index} | "{csv_row[1]}" ({csv_row[4]}) bis {csv_row[2]}\n')
@@ -129,30 +130,30 @@ class Scraper:
 
         # only keep up to 2 files
         exercise_files = list(filter(
-            lambda file: file.endswith('.txt'), next(walk('./data/task/'), (None, None, []))[2]))
+            lambda file: file.endswith('.txt'), next(walk(config["path"]["exercises"]), (None, None, []))[2]))
         if len(exercise_files) > 2:
             for exercise_file in exercise_files[0:len(exercise_files) - 2]:
-                remove(f'./data/task/{exercise_file}')
+                remove(f'{config["path"]["exercises"]}/{exercise_file}')
 
     def pending_exercises_changed(self) -> str or None:
         """gets currently pending exercises and checks if they have change"""
         self.get_pending_exercises()
 
         exercise_files = list(filter(
-            lambda file: file.endswith('.txt'), next(walk('./data/task/'), (None, None, []))[2]))
+            lambda file: file.endswith('.txt'), next(walk(config["path"]["exercises"]), (None, None, []))[2]))
 
         # compare the latest exercise files
         exercise_files = exercise_files[len(exercise_files) - 2:len(exercise_files)]
 
-        old_exercise_file = open(f'./data/task/{exercise_files[0]}', mode='r')
-        new_exercise_file = open(f'./data/task/{exercise_files[1]}', mode='r')
+        old_exercise_file = open(f'{config["path"]["exercises"]}/{exercise_files[0]}', mode='r')
+        new_exercise_file = open(f'{config["path"]["exercises"]}/{exercise_files[1]}', mode='r')
 
         for old_exercise in old_exercise_file:
             if old_exercise != new_exercise_file.readline():
                 old_exercise_file.close()
                 new_exercise_file.close()
 
-                return path.abspath(f'./data/task/{exercise_files[1]}')
+                return path.abspath(f'{config["path"]["exercises"]}/{exercise_files[1]}')
 
         old_exercise_file.close()
         new_exercise_file.close()

@@ -1,0 +1,6 @@
+error.ico
+exclamation.ico
+mail.ico
+notification.ico
+send.ico
+warning.ico

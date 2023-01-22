@@ -10,9 +10,9 @@ import keyring
 
 from plyer import notification
 
-from mailer import Mailer
-from scraper import Scraper
-from webdriver import WebdriverSession
+import mail
+import scraper
+import webdriver
 
 
 # ----------
@@ -20,7 +20,7 @@ from webdriver import WebdriverSession
 # ----------
 
 
-VERSION = (0, 0, 1, 'ALPHA')
+VERSION = ('0', '0', '2', 'beta', 'early access')
 
 
 # ----------
@@ -102,18 +102,22 @@ if not ISERV_PASSWORD:
 
 def fetch_unread_mails() -> None:
     """check for and lazily fetch unread mails"""
-    mailer = Mailer(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
+    my_receiver = mail.Receiver(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
 
     # get the ids of all the unread mails in the inbox
-    selection, mail_ids = mailer.get_ids_of_unread_mails()
+    selection, mail_ids = my_receiver.get_ids_of_unread_mails()
+
+    if not mail_ids:
+        # job is done if there are no unseen mails
+        return
 
     # inform the user about unread mails
-    logger.info(f'There {"are" if len(mail_ids) > 1 else "is"} {len(mail_ids)} unread '
-                f'{"mails" if len(mail_ids) > 1 else "mail"} in your inbox!')
+    logger.info(f'There {"is" if len(mail_ids) == 1 else "are"} {len(mail_ids)} unread '
+                f'{"mail" if len(mail_ids) == 1 else "mails"} in your inbox!')
     notification.notify(
         title='IServ Mails',
-        message=f'There {"are" if len(mail_ids) > 1 else "is"} {len(mail_ids)} unread '
-                f'{"mails" if len(mail_ids) > 1 else "mail"} in your inbox!',
+        message=f'There {"is" if len(mail_ids) == 1 else "are"} {len(mail_ids)} unread '
+                f'{"mail" if len(mail_ids) == 1 else "mails"} in your inbox!',
         app_name='IScrA',
         app_icon='./assets/icon/mail.ico',
         timeout=3,
@@ -121,7 +125,7 @@ def fetch_unread_mails() -> None:
 
     # fetch every unread mail in the inbox
     logger.info('Fetching unread mail(s)...')
-    for from_user, subject, body in mailer.extract_mail_content_by_id(selection, mail_ids):
+    for from_user, subject, body in my_receiver.extract_mail_content_by_id(selection, mail_ids):
         # "extract_text_by_mail_id()" is a generator
         # it is not a good idea to download all the unread mails at once and load the into memory
 
@@ -136,13 +140,13 @@ def fetch_unread_mails() -> None:
             '===================='
         )
 
-    mailer.shutdown()
-    del mailer
+    my_receiver.shutdown()
+    del my_receiver
 
 
 def send_and_reschedule_scheduled_mails() -> None:
     """sEndS aNd ResChEduLEs schEdUleD mAiLs"""
-    mailer = Mailer(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
+    my_transmitter = mail.Transmitter(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
 
     mail_schedule_file = open('./data/mail/schedule/schedule.txt', mode='r', encoding='utf-8')
     new_mail_schedule_file = open('./data/mail/schedule/new_schedule.txt', mode='w', encoding='utf-8')
@@ -173,7 +177,7 @@ def send_and_reschedule_scheduled_mails() -> None:
             continue
 
         # send the scheduled mail
-        mailer.send_mail_template(
+        my_transmitter.send_mail_template(
             to_user=scheduled_mail[2],
             subject=scheduled_mail[3],
             template=mail_template,
@@ -208,8 +212,8 @@ def send_and_reschedule_scheduled_mails() -> None:
     # replace the old schedule file with the new one
     replace(src='./data/mail/schedule/new_schedule.txt', dst='./data/mail/schedule/schedule.txt')
 
-    mailer.shutdown()
-    del mailer
+    my_transmitter.shutdown()
+    del my_transmitter
 
 
 def check_for_new_exercises() -> None:
@@ -219,9 +223,9 @@ def check_for_new_exercises() -> None:
 
     if the tasks changed, the textfile they were saved in will be opened
     """
-    scraper = Scraper(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
+    my_scraper = scraper.Scraper(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
 
-    if path_to_new_exercise_file := scraper.pending_exercises_changed():
+    if path_to_new_exercise_file := my_scraper.pending_exercises_changed():
         # inform the user that their pending tasks have changed
         logger.info('Your pending IServ-exercises have changed!')
         notification.notify(
@@ -234,22 +238,26 @@ def check_for_new_exercises() -> None:
         # open the new file with a list of the pending tasks
         startfile(path_to_new_exercise_file)
 
-    scraper.shutdown()
-    del scraper
+    my_scraper.shutdown()
+    del my_scraper
 
 
 def test_webdriver() -> None:
     """testing"""
-    webdriver = WebdriverSession(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
+    my_webdriver = webdriver.Session(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
 
-    # ...
+    my_webdriver.text_test()
 
-    webdriver.shutdown()
-    del webdriver
+    my_webdriver.shutdown()
+    del my_webdriver
 
 
+# ----------
 # run
-if __name__ == '__main__':
+# ----------
+
+
+def main():
     # mailer
     # fetch_unread_mails()
     # send_and_reschedule_scheduled_mails()
@@ -259,3 +267,7 @@ if __name__ == '__main__':
 
     # webdriver
     test_webdriver()
+
+
+if __name__ == '__main__':
+    main()
