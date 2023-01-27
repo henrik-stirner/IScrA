@@ -152,10 +152,3 @@ class Session:
         open(to_location, 'wb').write(data.content)
 
         return True
-
-    def text_test(self):
-        my_text = Text('https://mdg-berlin.de/iserv/etherpad/show/360',
-                       webdriver=self._webdriver, timeout=self._timeout)
-        my_text.save(self._webdriver)
-
-        print(vars(my_text))
