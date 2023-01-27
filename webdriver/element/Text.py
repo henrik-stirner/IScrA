@@ -3,16 +3,13 @@ from configparser import ConfigParser
 
 from selenium.webdriver.firefox.webdriver import WebDriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions
-from selenium.common.exceptions import TimeoutException, WebDriverException
+
+from time import sleep
 
 from datetime import datetime
 from os import path, mkdir
 from shutil import rmtree
 import json
-
-from webdriver import Session
 
 
 # ----------
@@ -46,6 +43,7 @@ class Text:
         self.location = None
 
         self.owner = None
+        self.shared_with_users = None
 
         self.tags = None
 
@@ -60,17 +58,17 @@ class Text:
         """fetches the data of a text from a directory it has been saved to"""
         self.location = location
 
-        # TODO
-        self.remote_location = None
+        data = json.load(open(
+            f'{self.location}{"" if self.location.endswith(".json") else "/data.json"}', 'r', encoding='utf-8'))
 
-        self.owner = None
-
-        self.tags = None
-
-        self.title = None
-
-        self.creation_date = None
-        self.last_modification_date = None
+        self.remote_location = data['remote_location']
+        self.location = data['location']
+        self.owner = data['owner']
+        self.shared_with_users = data['shared_with_users']
+        self.tags = data['tags']
+        self.title = data['title']
+        self.creation_date = datetime.strptime(data['creation_date'], '%d.%m.%Y %H:%M'),
+        self.last_modification_date = datetime.strptime(data['last_modification_date'], '%d.%m.%Y %H:%M')
 
     def _fetch_remote(self, webdriver: WebDriver, remote_location: str) -> None:
         """fetches the data of a text from the corresponding IServ page"""
@@ -78,17 +76,54 @@ class Text:
 
         webdriver.get(remote_location)
 
-        # TODO
-        self.location = None
+        text_data_dd_list = webdriver.find_elements(By.XPATH, '//dd[@class="col-sm-8"]')
 
-        self.owner = None
+        self.owner = text_data_dd_list[0].text
 
-        self.tags = None
+        shared_with_users_li_list = text_data_dd_list[1].find_element(By.TAG_NAME, 'ul').find_elements(
+            By.TAG_NAME, 'li')
+        # TODO: only works if the language is set to German ('(keine)')
+        if not shared_with_users_li_list[0].text == '(keine)':
+            self.shared_with_users = {}
+            for li in shared_with_users_li_list:
+                # self.shared_with_users['username'] = ['granted permission', ...]
+                self.shared_with_users[li.text] = [
+                    span.get_attribute('title') for span in li.find_elements(By.TAG_NAME, 'span')
+                    if span.get_attribute('title')
+                ]
 
-        self.title = None
+        self.tags = [
+            a.text for a in text_data_dd_list[2].find_elements(
+                By.XPATH, '//a[@class="label label-info tag-link mr-1"]')
+        ]
 
-        self.creation_date = None
-        self.last_modification_date = None
+        # TODO: only works if the language is set to German ('Details zu ')
+        self.title = webdriver.find_element(By.TAG_NAME, 'h1').text.removeprefix('Details zu ')
+
+        webdriver.get(f'https://{config["server"]["domain"]}{config["domain_extension"]["text"]}')
+
+        text_document_rows = webdriver.find_element(By.TAG_NAME, 'tbody').find_elements(By.TAG_NAME, 'tr')
+        for text_document_row in text_document_rows:
+            text_document_title_link = text_document_row.find_element(
+                    By.XPATH, '//td[@class="iserv-admin-list-field-textarea"]').find_element(By.TAG_NAME, 'a')
+            if (not self.title == text_document_title_link.text) and (
+                    not self.remote_location == text_document_title_link.get_attribute('href')):
+                continue
+
+            self.creation_date = datetime.strptime(
+                text_document_row.find_element(
+                    # second iserv-admin-list-field-datetime field?
+                    By.XPATH, '//td[@class="iserv-admin-list-field-datetime"]').text,
+                '%d.%m.%Y %H:%M'
+            )
+            self.last_modification_date = datetime.strptime(
+                text_document_row.find_element(
+                    By.XPATH, '//td[@class="iserv-admin-list-field-datetime sorting_1"]').text,
+                '%d.%m.%Y %H:%M'
+            )
+
+        if path.exists(text_directory_location := f'{config["path"]["text"]}/{self.title}'):
+            self.location = text_directory_location
 
     def _load(self, from_location: str, webdriver: WebDriver = None) -> None:
         """loads the data of a text from a given location"""
@@ -99,10 +134,44 @@ class Text:
         else:
             self._fetch_local(from_location)
 
-    def save(self, session: Session, to_location: str = config["path"]["exercise"]) -> bool:
+    def save(self, webdriver: WebDriver, override: bool = True, to_location: str = config["path"]["text"]) -> bool:
         """creates a directory in which the texts content and data are saved in"""
-        # TODO
-        pass
+        if self.location is None:
+            self.location = f'{to_location}/{self.title}'
+            mkdir(self.location)
+        elif override:
+            rmtree(self.location)
+            mkdir(self.location)
+        else:
+            return False
+
+        json.dump({
+            'remote_location': self.remote_location,
+            'location': self.location,
+            'owner': self.owner,
+            'shared_with_users': self.shared_with_users,
+            'tags': self.tags,
+            'title': self.title,
+            'creation_date': datetime.strftime(self.creation_date, '%d.%m.%Y %H:%M'),
+            'last_modification_date': datetime.strftime(self.last_modification_date, '%d.%m.%Y %H:%M')
+        }, open(f'{self.location}/data.json', 'w', encoding='utf-8'), indent=4)
+
+        with open(f'{self.location}/{self.title}.txt', 'w', encoding='utf-8') as outfile:
+            webdriver.get(self.remote_location)
+
+            # TODO
+            sleep(3)
+
+            # TODO
+            ace_lines = webdriver.find_elements(By.XPATH, '//div[@class="ace-line"]')
+            for ace_line in ace_lines:
+                for ace_line_child in ace_line.find_elements(By.CSS_SELECTOR, '*'):
+                    if ace_line_child_child := ace_line_child.find_element(By.CSS_SELECTOR, '*'):
+                        outfile.write(f'{ace_line_child_child.text}\n')
+
+                    outfile.write(f'{ace_line_child.text}\n')
+
+            outfile.close()
 
     def __eq__(self, other) -> bool:
         """

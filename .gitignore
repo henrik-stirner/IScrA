@@ -30,6 +30,7 @@ venv/
 
 **data/exercises/*.*
 **data/texts/*.*
+**data/texts/text/*/
 
 
 data/exercises/exercise/

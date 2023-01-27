@@ -38,9 +38,9 @@ class MessengerRoom:
 
         self.last_use_date = None
 
-        self._load(webdriver, remote_location)
+        self._load(remote_location, webdriver)
 
-    def _load(self, webdriver: WebDriver, remote_location: str) -> None:
+    def _load(self, remote_location: str, webdriver: WebDriver) -> None:
         """fetches the data of a messenger room from the corresponding IServ page"""
         self.remote_location = remote_location
         self.token = remote_location.split('/')[-1]

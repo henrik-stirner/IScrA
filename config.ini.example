@@ -56,5 +56,5 @@ exercise = ./data/exercises/exercise
 
 texts = ./data/texts
 
-# filesystem will be a root directory of directories and files in the users IServ filesystem
+# filesystem will be a root directory of directories and files in the users remote IServ filesystem
 filesystem = ./data/filesystem

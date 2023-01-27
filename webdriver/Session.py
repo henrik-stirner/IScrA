@@ -154,4 +154,8 @@ class Session:
         return True
 
     def text_test(self):
-        pass
+        my_text = Text('https://mdg-berlin.de/iserv/etherpad/show/360',
+                       webdriver=self._webdriver, timeout=self._timeout)
+        my_text.save(self._webdriver)
+
+        print(vars(my_text))
