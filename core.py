@@ -246,7 +246,7 @@ def test_webdriver() -> None:
     """testing"""
     my_webdriver = webdriver.Session(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
 
-    pass
+    my_webdriver.test()
 
     my_webdriver.shutdown()
     del my_webdriver

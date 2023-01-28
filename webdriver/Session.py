@@ -10,6 +10,7 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 
 import requests
 
+from webdriver.module import ExerciseModule, TextModule, FileModule, MessengerModule
 from webdriver.element import Exercise, Text, File, MessengerRoom
 
 
@@ -115,7 +116,7 @@ class Session:
         creates an url (remote location) from a module name
         using the domain and domain extensions given in the config
         """
-        return f'https://{config["server"]["domain"]}{config["domain_extensions"][module_name]}'
+        return f'https://{config["server"]["domain"]}{config["domain_extension"][module_name]}'
 
     def navigate_to_module(self, module_name: str) -> None:
         """makes the webdriver navigate to the remote location of a given module"""
@@ -152,3 +153,10 @@ class Session:
         open(to_location, 'wb').write(data.content)
 
         return True
+
+    def test(self):
+        my_mm = MessengerModule(webdriver=self._webdriver, module_name='messenger', timeout=self._timeout)
+        print(vars(my_mm))
+
+        # my_fm = FileModule(webdriver=self._webdriver, module_name='files', base_directory='/Files')
+        # print(vars(my_fm))

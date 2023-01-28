@@ -3,8 +3,6 @@ from configparser import ConfigParser
 
 from selenium.webdriver.firefox.webdriver import WebDriver
 
-from webdriver.Session import Session
-
 
 # ----------
 # logger
@@ -27,6 +25,7 @@ config.read('config.ini', encoding='utf-8')
 # module base class
 # ----------
 
+
 class ModuleBase:
     """
     base class for all modules
@@ -35,10 +34,9 @@ class ModuleBase:
     -> different Sessions can work with the same elements, compare them, and so on
     -> each module should be present in each session only once, because for each IServ user each module exists only once
     """
-    def __init__(self, session: Session, webdriver: WebDriver, module_name: str) -> None:
-        self.name = module_name
-
-        self._session = session
-        self._session.navigate_to_module(self.name)
-
+    def __init__(self, webdriver: WebDriver, module_name: str, timeout: float = 5.0) -> None:
         self._webdriver = webdriver
+        self._timeout = timeout
+
+        self.name = module_name
+        self.remote_location = f'https://{config["server"]["domain"]}{config["domain_extension"][module_name]}'
