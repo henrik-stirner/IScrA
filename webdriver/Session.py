@@ -153,10 +153,3 @@ class Session:
         open(to_location, 'wb').write(data.content)
 
         return True
-
-    def test(self):
-        my_mm = MessengerModule(webdriver=self._webdriver, module_name='messenger', timeout=self._timeout)
-        print(vars(my_mm))
-
-        # my_fm = FileModule(webdriver=self._webdriver, module_name='files', base_directory='/Files')
-        # print(vars(my_fm))

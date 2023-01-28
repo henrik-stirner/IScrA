@@ -43,7 +43,6 @@ class TextModule(ModuleBase):
 
     def _load(self) -> None:
         """fetches important data of a text module from the corresponding IServ page"""
-        # TODO
         self._webdriver.get(self.remote_location)
 
         text_table = WebDriverWait(self._webdriver, self._timeout).until(

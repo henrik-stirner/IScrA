@@ -43,7 +43,6 @@ class ExerciseModule(ModuleBase):
 
     def _load(self) -> None:
         """fetches important data of an exercise module from the corresponding IServ page"""
-        # TODO
         self._webdriver.get(self.remote_location)
 
         exercise_table = WebDriverWait(self._webdriver, self._timeout).until(
