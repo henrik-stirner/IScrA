@@ -10,7 +10,7 @@ login = /iserv/auth/login
 logout = /iserv/auth/logout
 settings = /iserv/profile/settings
 
-
+file = /iserv/file/-/Files
 files = /iserv/file/-
 files_user_ext = /Files
 files_group_ext = /Groups
