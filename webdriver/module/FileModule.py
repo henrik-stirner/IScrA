@@ -5,7 +5,6 @@ from selenium.webdriver.firefox.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
-from selenium.common.exceptions import TimeoutException, WebDriverException
 
 from webdriver.module.ModuleBase import ModuleBase
 
@@ -73,34 +72,60 @@ class FileModule(ModuleBase):
 
         self._webdriver.get(f'{self.remote_location}/{self.relative_path}')
 
-    def list_subdirectories(self) -> []:
-        """returns a list of all subdirectories of the current directory"""
+    def list_directory(self) -> {}:
+        """returns a list of all subdirectories and files in the current directory"""
         if not self._webdriver.current_url == f'{self.remote_location}/{self.relative_path}':
             self._webdriver.get(f'{self.remote_location}/{self.relative_path}')
 
-        subdirectories = []
-        # TODO
+        directory_contents = {}
 
-        return subdirectories
+        # TODO: somehow not all subdirectories or files have valid links and are not fetched correctly...
+        directory_content_table_row_links = WebDriverWait(self._webdriver, self._timeout).until(
+            expected_conditions.presence_of_all_elements_located((
+                By.XPATH, '//tbody/tr[not(contains(@class, "hasThumbnails"))]/td[contains(@class, "files-name")]/a')))
 
-    def list_files(self) -> []:
-        """returns a list of all files in the current directory"""
-        if not self._webdriver.current_url == f'{self.remote_location}/{self.relative_path}':
-            self._webdriver.get(f'{self.remote_location}/{self.relative_path}')
+        for directory_content_table_row_link in directory_content_table_row_links:
+            # name: remote_location
+            directory_contents[
+                directory_content_table_row_link.text
+            ] = directory_content_table_row_link.get_attribute('href')
 
-        files = []
-        # TODO
+        return directory_contents
 
-        return files
-
-    def create_directory(self, directory_name) -> str:
+    def create_directory(self, directory_name: str) -> str:
         """creates a directory with the given name in the current location and returns its relative_path"""
         if not self._webdriver.current_url == f'{self.remote_location}/{self.relative_path}':
             self._webdriver.get(f'{self.remote_location}/{self.relative_path}')
 
+        add_options_dropdown_button = WebDriverWait(self._webdriver, self._timeout).until(
+            expected_conditions.presence_of_element_located((By.ID, 'dropdownAdd')))
+        add_options_dropdown_button.click()
+
+        add_folder_button = WebDriverWait(self._webdriver, self._timeout).until(
+            expected_conditions.presence_of_element_located((By.ID, 'file-add-folder')))
+        add_folder_button.click()
+
         # TODO
+        # Adding a new folder sends a post request with some kind of encoded header to /iserv/file/add/folder.
+        # I do not know yet how exactly the request is encoded or the path transmitted.
+        # Maybe try x-www-urlencoded?
+
+        folder_name_input = WebDriverWait(self._webdriver, self._timeout).until(
+            expected_conditions.presence_of_element_located((By.ID, 'file_factory_item_name')))
+        folder_name_input.send_keys(directory_name)
+
+        create_new_folder_button = WebDriverWait(self._webdriver, self._timeout).until(
+            expected_conditions.presence_of_element_located((By.ID, 'file_factory_submit')))
+        create_new_folder_button.click()
 
         return f'{self.relative_path}/{directory_name}'
+
+    def upload_file(self, path_to_file):
+        """uploads a local file and adds it to the current directory"""
+        if not self._webdriver.current_url == f'{self.remote_location}/{self.relative_path}':
+            self._webdriver.get(f'{self.remote_location}/{self.relative_path}')
+        # TODO: see line 82 <- how find files reliably?
+        pass
 
     def remove(self, name) -> None:
         """
@@ -110,4 +135,4 @@ class FileModule(ModuleBase):
         if not self._webdriver.current_url == f'{self.remote_location}/{self.relative_path}':
             self._webdriver.get(f'{self.remote_location}/{self.relative_path}')
 
-        # TODO
+        # TODO: see line 82 <- how to find files reliably?

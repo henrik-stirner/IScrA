@@ -5,6 +5,7 @@ from datetime import datetime
 from os import walk, remove, path
 
 from requests import Session
+from requests.auth import HTTPBasicAuth
 from requests.exceptions import RequestException
 from bs4 import BeautifulSoup
 

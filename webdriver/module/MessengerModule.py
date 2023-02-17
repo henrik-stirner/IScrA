@@ -52,7 +52,7 @@ class MessengerModule(ModuleBase):
         self.remote_messenger_room_locations = {}
         for messenger_room_button in messenger_room_buttons:
             messenger_room_button.click()
-            # name = remote_location
+            # name: remote_location
             self.remote_messenger_room_locations[
                 messenger_room_button.find_element(By.XPATH, './div[2]/div[1]/b').text
             ] = self._webdriver.current_url

@@ -52,5 +52,5 @@ class ExerciseModule(ModuleBase):
         self.remote_exercise_locations = {}
         for exercise_table_row in exercise_table_rows:
             exercise_link = exercise_table_row.find_element(By.XPATH, './td[2]/a')
-            # name = remote_location
+            # name: remote_location
             self.remote_exercise_locations[exercise_link.text] = exercise_link.get_attribute('href')

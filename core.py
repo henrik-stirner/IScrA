@@ -100,7 +100,7 @@ if not ISERV_PASSWORD:
 # ----------
 
 
-def fetch_unread_mails() -> None:
+def fetch_unread_mails() -> str or None:
     """check for and lazily fetch unread mails"""
     my_receiver = mail.Receiver(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
 
@@ -109,7 +109,7 @@ def fetch_unread_mails() -> None:
 
     if not mail_ids:
         # job is done if there are no unseen mails
-        return
+        return None
 
     # inform the user about unread mails
     logger.info(f'There {"is" if len(mail_ids) == 1 else "are"} {len(mail_ids)} unread '
@@ -130,15 +130,12 @@ def fetch_unread_mails() -> None:
         # it is not a good idea to download all the unread mails at once and load the into memory
 
         # log unread mails because I do not want to save them anywhere
-        logger.info(
-            '\n'
-            '====================\n'
-            f'Subject: {subject}\n'
-            f'Sender: {from_user}\n'
-            '----------\n'
-            f'{body}\n'
-            '===================='
-        )
+        data = '\n====================' \
+               f'\nSubject: {subject}\nSender: {from_user}\n----------\n{body}' \
+               '\n===================='
+
+        yield data
+        logger.info(data)
 
     my_receiver.shutdown()
     del my_receiver
@@ -216,7 +213,7 @@ def send_and_reschedule_scheduled_mails() -> None:
     del my_transmitter
 
 
-def check_for_new_exercises() -> None:
+def check_for_new_exercises() -> str or None:
     """
     checks if the users tasks have changed by comparing the currently pending tasks
     to the ones that were saved in a textfile the last time the "pending_tasks_changed()" function was called
@@ -241,15 +238,10 @@ def check_for_new_exercises() -> None:
     my_scraper.shutdown()
     del my_scraper
 
-
-def test_webdriver() -> None:
-    """testing"""
-    my_webdriver = webdriver.Session(iserv_username=ISERV_USERNAME, iserv_password=ISERV_PASSWORD)
-
-    my_webdriver.test()
-
-    my_webdriver.shutdown()
-    del my_webdriver
+    try:
+        return path_to_new_exercise_file
+    except NameError:
+        return None
 
 
 # ----------
@@ -259,14 +251,15 @@ def test_webdriver() -> None:
 
 def main():
     # mailer
-    # fetch_unread_mails()
-    # send_and_reschedule_scheduled_mails()
+    for unread_mail in fetch_unread_mails():
+        pass
+
+    send_and_reschedule_scheduled_mails()
 
     # scraper
-    # check_for_new_exercises()
+    check_for_new_exercises()
 
     # webdriver
-    test_webdriver()
 
 
 if __name__ == '__main__':

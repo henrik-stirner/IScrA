@@ -22,19 +22,28 @@ subparsers = parser.add_subparsers(
 
 
 # ----------
-# version command
+# version command for main parser
+# ----------
+
+
+parser.add_argument('-v', '--version', action='version', version=f'%(prog)s {".".join(core.VERSION)}')
+
+
+# ----------
+# version command as subparser
 # ----------
 
 
 def version(arguments: argparse.Namespace) -> str:
     """returns the current IScrA version"""
-    return '.'.join(core.VERSION)
+    return f'{parser.prog} {".".join(core.VERSION)}'
 
 
 version_command = subparsers.add_parser('version', help='returns the current IScrA version')
 version_command.set_defaults(function=version)
 
 
+"""
 # ----------
 # example command
 # ----------
@@ -56,6 +65,55 @@ example_command_arguments.add_argument('text')
 
 example_command_options = example_command.add_argument_group('options')
 example_command_options.add_argument('-rt', '--repeat-text', type=int, default=0)
+"""
+
+
+# ----------
+# mail command
+# ----------
+
+
+def mail(arguments: argparse.Namespace) -> str:
+    if arguments.action == 'unread':
+        for unread_mail in core.fetch_unread_mails():
+            # print(f'\n{unread_mail}\n')
+            # the logger in core.py already does the job; however, we still need the for loop to trigger the generator
+            pass
+
+        return ''  # do not print "None"
+
+
+mail_command = subparsers.add_parser('mail', help='tools for the IServ mail module')
+mail_command.set_defaults(function=mail)
+
+mail_command_arguments = mail_command.add_argument_group('arguments')
+mail_command_arguments.add_argument('action', choices=['unread'], help='action to be performed by the client')
+
+# mail_command_options = mail_command.add_argument_group('options')
+# mail_command_options.add_argument('-o', '--option', type=int, default=0)
+
+
+# ----------
+# exercise command
+# ----------
+
+
+def exercise(arguments: argparse.Namespace) -> str:
+    if arguments.action == 'new':
+        if path_to_new_exercise_file := core.check_for_new_exercises():
+            return f'Opening updated exercise table at "{path_to_new_exercise_file}"... '
+        else:
+            return 'Your pending exercises have not changed.'
+
+
+exercise_command = subparsers.add_parser('exercise', help='tools for the IServ exercise module')
+exercise_command.set_defaults(function=exercise)
+
+exercise_command_arguments = exercise_command.add_argument_group('arguments')
+exercise_command_arguments.add_argument('action', choices=['new'], help='action to be performed by the client')
+
+# exercise_command_options = exercise_command.add_argument_group('options')
+# exercise_command_options.add_argument('-o', '--option', type=int, default=0)
 
 
 # ----------
