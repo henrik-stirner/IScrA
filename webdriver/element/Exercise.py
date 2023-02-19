@@ -70,6 +70,7 @@ class Exercise:
         self.tags = None
 
         self.title = None
+        self.safe_title = None
         self.description = None
         self.attachments = None
 
@@ -93,6 +94,7 @@ class Exercise:
         self.subject = data['subject']
         self.tags = data['tags']
         self.title = data['title']
+        self.safe_title = data['safe_title']
         self.description = data['description']
         self.attachments = data['attachments']
         self.start_date = datetime.strptime(data['start_date'], '%d.%m.%Y %H:%M')
@@ -121,6 +123,7 @@ class Exercise:
         self.tags = [a.text for a in webdriver.find_elements(By.XPATH, '//a[@class="label label-info exercise-tag"]')]
 
         self.title = webdriver.find_element(By.XPATH, '//h3[@class="panel-title"]').text
+        self.safe_title = self.remove_forbidden_characters(self.title)
         self.description = '\n'.join([
             p.text for p in webdriver.find_element(By.XPATH, '//div[@class="text-break-word pb-0"]'
                                                    ).find_elements(By.TAG_NAME, 'p')
@@ -171,10 +174,17 @@ class Exercise:
         else:
             self._fetch_local(from_location)
 
-    def save(self, session: Session, override: bool = True, to_location: str = config["path"]["exercise"]) -> bool:
+    @staticmethod
+    def remove_forbidden_characters(from_string: str, forbidden_characters: str = '"*<>?/\\|:') -> str:
+        for character in forbidden_characters:
+            from_string = from_string.replace(character, '')
+
+        return from_string
+
+    def save(self, session: Session, override: bool = True, to_location: str = config['path']['exercise']) -> bool:
         """creates a directory in which the exercises content, attachments and data are saved in (in subdirectories)"""
         if self.location is None:
-            self.location = f'{to_location}/{self.title}'
+            self.location = f'{to_location}/{self.safe_title}'
             mkdir(self.location)
         elif override:
             rmtree(self.location)
@@ -190,6 +200,7 @@ class Exercise:
             'subject': self.subject,
             'tags': self.tags,
             'title': self.title,
+            'safe_title': self.safe_title,
             'description': self.description,
             'attachments': self.attachments,
             'start_date': datetime.strftime(self.start_date, '%d.%m.%Y %H:%M'),
@@ -199,7 +210,7 @@ class Exercise:
         }, open(f'{self.location}/data.json', 'w', encoding='utf-8'), indent=4)
 
         # text file for humans - nice and readable
-        with open(f'{self.location}/{self.title}.txt', 'w', encoding='utf-8') as outfile:
+        with open(f'{self.location}/{self.safe_title}.txt', 'w', encoding='utf-8') as outfile:
             outfile.write(
                 f'{"=" * 100}\n'
                 f'{self.title}\n'
@@ -221,7 +232,8 @@ class Exercise:
         for remote_attachment_location in self.attachments:
             session.fetch_downloadable(
                 from_remote_location=remote_attachment_location,
-                to_location=f'{attachment_directory}/{remote_attachment_location.split("/")[-1]}'
+                to_location=f'{attachment_directory}/'
+                            f'{self.remove_forbidden_characters(remote_attachment_location.split("/")[-1])}'
             )
 
         return True

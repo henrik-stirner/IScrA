@@ -65,6 +65,13 @@ class Session:
         # for downloading files independently
         self._request_session = None
 
+        # each module should be present in each session only once,
+        # because for each IServ user each module exists only once
+        self._exercise_module = None
+        self._text_module = None
+        self._file_module = None
+        self._messenger_module = None
+
     def _login(self, iserv_username: str, iserv_password: str) -> bool:
         """makes this instance of WebdriverSession login to IServ"""
         self._webdriver.get(f'https://{config["server"]["domain"]}{config["domain_extension"]["login"]}')
@@ -153,3 +160,177 @@ class Session:
         open(to_location, 'wb').write(data.content)
 
         return True
+
+    # ----------
+    # the actually useful part
+    # ----------
+
+    # even more boilerplate code...
+
+    # modules
+    def exercise_module(self, domain_extension_config_key=None) -> ExerciseModule:
+        """access point for this sessions exercise module"""
+        if domain_extension_config_key is None:
+            domain_extension_config_key = 'exercise'
+
+        if self._exercise_module is None:
+            self._exercise_module = ExerciseModule(
+                webdriver=self._webdriver,
+                module_name=domain_extension_config_key,
+                timeout=self._timeout
+            )
+
+        return self._exercise_module
+
+    def text_module(self, domain_extension_config_key=None) -> TextModule:
+        """access point for this sessions text module"""
+        if domain_extension_config_key is None:
+            domain_extension_config_key = 'text'
+
+        if self._text_module is None:
+            self._text_module = TextModule(
+                webdriver=self._webdriver,
+                module_name=domain_extension_config_key,
+                timeout=self._timeout
+            )
+
+        return self._text_module
+
+    def file_module(self, domain_extension_config_key=None) -> FileModule:
+        """access point for this sessions files module"""
+        if domain_extension_config_key is None:
+            domain_extension_config_key = 'files'
+
+        if self._file_module is None:
+            self._file_module = FileModule(
+                webdriver=self._webdriver,
+                module_name=domain_extension_config_key,
+                timeout=self._timeout
+            )
+
+        return self._file_module
+
+    def messenger_module(self, domain_extension_config_key=None) -> MessengerModule:
+        """access point for this sessions messenger module"""
+        if domain_extension_config_key is None:
+            domain_extension_config_key = 'messenger'
+
+        if self._messenger_module is None:
+            self._messenger_module = MessengerModule(
+                webdriver=self._webdriver,
+                module_name=domain_extension_config_key,
+                timeout=self._timeout
+            )
+
+        return self._messenger_module
+
+    # now it actually gets interesting (for real) (I swear)
+
+    # exercises
+    def fetch_all_exercises(self) -> list:
+        """returns a list of all exercises (webdriver.element.Exercise.Exercise) in this session's ExerciseModule"""
+        self.exercise_module()
+
+        return [Exercise(
+            from_location=remote_location,
+            webdriver=self._webdriver,
+            timeout=self._timeout
+        ) for remote_location in self._exercise_module.remote_exercise_locations.values()]
+
+    def fetch_exercises_by_keywords(self, keywords: list) -> list:
+        """
+        returns a list of all texts (webdriver.element.Text.Text) in this session's TextModule
+        which have a title that contains at least one of the given keywords
+        """
+        self.exercise_module()
+
+        return [Exercise(
+            from_location=remote_location,
+            webdriver=self._webdriver,
+            timeout=self._timeout
+        ) for name, remote_location in self._exercise_module.remote_exercise_locations.items() if any(
+            keyword in name for keyword in keywords)]
+
+    def save_all_exercises(self, override: bool = True, to_location: str = config['path']['exercise']) -> None:
+        """saves all exercises (webdriver.element.Exercise.Exercise) in this session's ExerciseModule"""
+        for exercise in self.fetch_all_exercises():
+            exercise.save(session=self, override=override, to_location=to_location)
+
+    def save_exercise(self, exercise: Exercise, override: bool = True, to_location: str = config['path']['exercise']
+                      ) -> None:
+        """saves an exercise (webdriver.element.Exercise.Exercise) from this session's ExerciseModule"""
+        exercise.save(session=self, override=override, to_location=to_location)
+
+    # texts
+    def fetch_all_texts(self) -> list:
+        """returns a list of all texts (webdriver.element.Text.Texts) in this session's TextModule"""
+        self.text_module()
+
+        return [Text(
+            from_location=remote_location,
+            webdriver=self._webdriver,
+            timeout=self._timeout
+        ) for remote_location in self._text_module.remote_text_locations.values()]
+
+    def fetch_texts_by_keywords(self, keywords: list) -> list:
+        """
+        returns a list of all texts (webdriver.element.Text.Text) in this session's TextModule
+        which have a title that contains at least one of the given keywords
+        """
+        self.text_module()
+
+        return [Text(
+            from_location=remote_location,
+            webdriver=self._webdriver,
+            timeout=self._timeout
+        ) for name, remote_location in self._text_module.remote_text_locations.items() if any(
+            keyword.lower() in name.lower() for keyword in keywords)]
+
+    def save_all_texts(self, override: bool = True, to_location: str = config['path']['text']) -> None:
+        """saves all texts (webdriver.element.Text.Text) in this session's TextModule"""
+        for text in self.fetch_all_texts():
+            text.save(webdriver=self._webdriver, override=override, to_location=to_location)
+
+    def save_text(self, text: Text, override: bool = True, to_location: str = config['path']['text']
+                  ) -> None:
+        """saves an exercise (webdriver.element.Exercise.Exercise) from this session's ExerciseModule"""
+        text.save(webdriver=self._webdriver, override=override, to_location=to_location)
+
+    # files
+    # TODO: files
+
+    # messenger rooms
+    def get_all_messenger_rooms(self) -> list:
+        """
+        returns a list of all messenger rooms (webdriver.element.MessengerRoom.MessengerRoom)
+        in this session's MessengerModule
+        """
+        self.messenger_module()
+
+        return [MessengerRoom(
+            remote_location=remote_location,
+            webdriver=self._webdriver,
+            timeout=self._timeout
+        ) for remote_location in self._messenger_module.remote_messenger_room_locations.values()]
+
+    def get_messenger_rooms_by_keywords(self, keywords: list) -> list:
+        """
+        returns a list of all texts (webdriver.element.Text.Text) in this session's TextModule
+        which have a title that contains at least one of the given keywords
+        """
+        self.messenger_module()
+
+        return [MessengerRoom(
+            remote_location=remote_location,
+            webdriver=self._webdriver,
+            timeout=self._timeout
+        ) for name, remote_location in self._messenger_module.remote_messenger_room_locations.items() if any(
+            keyword in name for keyword in keywords)]
+
+    def fetch_messages(self, messenger_room: MessengerRoom, number_of_messages: int) -> list:
+        """fetches the last number_of_messages that have been sent in a messenger room"""
+        return messenger_room.fetch_messages(webdriver=self._webdriver, number_of_messages=number_of_messages)
+
+    def send_messages(self, messenger_room: MessengerRoom, messages: list) -> None:
+        """sends the given messages to a messenger room"""
+        messenger_room.send_messages(webdriver=self._webdriver, messages=messages)

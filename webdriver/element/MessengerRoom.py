@@ -84,7 +84,7 @@ class MessengerRoom:
             expected_conditions.presence_of_all_elements_located((By.CLASS_NAME, 'date-container')))[-1].text
 
     def fetch_messages(self, webdriver: WebDriver, number_of_messages: int) -> [(datetime, str, str)]:
-        """fetches the last number_of_messages that have been sent in a messenger room"""
+        """fetches the last number_of_messages that have been sent in this messenger room"""
         if not webdriver.current_url == self.remote_location:
             webdriver.get(self.remote_location)
 
@@ -110,7 +110,7 @@ class MessengerRoom:
         return chat_messages
 
     def send_messages(self, webdriver: WebDriver, messages: list) -> None:
-        """sends a message in a messenger room"""
+        """sends the given messages to this messenger room"""
         if not webdriver.current_url == self.remote_location:
             webdriver.get(self.remote_location)
 

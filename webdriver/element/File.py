@@ -63,10 +63,12 @@ class File:
             'r', encoding='utf-8'))
 
         self.relative_remote_location = data['relative_remote_location']
+        self.safe_relative_remote_location = data['safe_relative_remote_location']
         self.remote_locations = data['remote_locations']
         self.owner = data['owner']
         self.type = data['type']
         self.name = data['name']
+        self.safe_name = data['safe_name']
         self.size = data['size']
         self.last_modification_date = datetime.strptime(data['last_modification_date'], '%d.%m.%Y %H:%M')
 
@@ -122,11 +124,15 @@ class File:
                     'download': remote_location
                 }
 
+        self.safe_relative_remote_location = self.remove_forbidden_characters(
+            self.relative_remote_location, forbidden_characters='\"*<>?\\|')
+
     def _fetch_remote(self, webdriver: WebDriver, remote_location: str) -> None:
         """fetches the data of a file from the corresponding IServ page"""
         self._remote_locations_from_single_remote_location(remote_location)
 
         self.name = self.relative_remote_location.split('/')[-1]
+        self.safe_name = self.remove_forbidden_characters(self.name)
 
         self.type = f'.{self.name.split(".")[-1]}'
 
@@ -154,10 +160,17 @@ class File:
         else:
             self._fetch_local(from_location)
 
-    def save(self, session: Session, override: bool = True, to_location: str = config["path"]["filesystem"]) -> bool:
+    @staticmethod
+    def remove_forbidden_characters(from_string: str, forbidden_characters: str = '"*<>?/\\|:') -> str:
+        for character in forbidden_characters:
+            from_string = from_string.replace(character, '')
+
+        return from_string
+
+    def save(self, session: Session, override: bool = True, to_location: str = config['path']['filesystem']) -> bool:
         """creates a directory in which the files content and data are saved in"""
         if self.directory_location is None:
-            self.directory_location = f'{to_location}{self.relative_remote_location.removesuffix(self.type)}'
+            self.directory_location = f'{to_location}{self.safe_relative_remote_location.removesuffix(self.type)}'
             makedirs(self.directory_location)
         elif override:
             rmtree(self.directory_location)
@@ -167,18 +180,20 @@ class File:
 
         json.dump({
             'relative_remote_location': self.relative_remote_location,
+            'safe_relative_remote_location': self.safe_relative_remote_location,
             'remote_locations': self.remote_locations,
             'directory_location': self.directory_location,
             'owner': self.owner,
             'type': self.type,
             'name': self.name,
+            'safe_name': self.safe_name,
             'size': self.size,
             'last_modification_date': datetime.strftime(self.last_modification_date, '%d.%m.%Y %H:%M')
         }, open(f'{self.directory_location}/data.json', 'w', encoding='utf-8'), indent=4)
 
         session.fetch_downloadable(
             from_remote_location=self.remote_locations['download'],
-            to_location=f'{self.directory_location}/{self.name}'
+            to_location=f'{self.directory_location}/{self.safe_name}'
         )
 
         return True

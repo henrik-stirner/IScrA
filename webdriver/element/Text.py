@@ -72,6 +72,7 @@ class Text:
         self.shared_with_users = data['shared_with_users']
         self.tags = data['tags']
         self.title = data['title']
+        self.safe_title = data['safe_title']
         self.creation_date = datetime.strptime(data['creation_date'], '%d.%m.%Y %H:%M'),
         self.last_modification_date = datetime.strptime(data['last_modification_date'], '%d.%m.%Y %H:%M')
 
@@ -107,6 +108,7 @@ class Text:
 
         # TODO: only works if the language is set to German ('Details zu ')
         self.title = webdriver.find_element(By.TAG_NAME, 'h1').text.removeprefix('Details zu ')
+        self.safe_title = self.remove_forbidden_characters(self.title)
 
         webdriver.get(f'https://{config["server"]["domain"]}{config["domain_extension"]["text"]}')
 
@@ -148,10 +150,17 @@ class Text:
         else:
             self._fetch_local(from_location)
 
-    def save(self, webdriver: WebDriver, override: bool = True, to_location: str = config["path"]["text"]) -> bool:
+    @staticmethod
+    def remove_forbidden_characters(from_string: str, forbidden_characters: str = '"*<>?/\\|:') -> str:
+        for character in forbidden_characters:
+            from_string = from_string.replace(character, '')
+
+        return from_string
+
+    def save(self, webdriver: WebDriver, override: bool = True, to_location: str = config['path']['text']) -> bool:
         """creates a directory in which the texts content and data are saved in"""
         if self.location is None:
-            self.location = f'{to_location}/{self.title}'
+            self.location = f'{to_location}/{self.safe_title}'
             mkdir(self.location)
         elif override:
             rmtree(self.location)
@@ -159,7 +168,7 @@ class Text:
         else:
             return False
 
-        with open(f'{self.location}/{self.title}.txt', 'w', encoding='utf-8') as outfile:
+        with open(f'{self.location}/{self.safe_title}.txt', 'w', encoding='utf-8') as outfile:
             webdriver.get(self.remote_location)
 
             # they used an iframe ...
@@ -188,6 +197,7 @@ class Text:
             'shared_with_users': self.shared_with_users,
             'tags': self.tags,
             'title': self.title,
+            'safe_title': self.safe_title,
             'creation_date': datetime.strftime(self.creation_date, '%d.%m.%Y %H:%M'),
             'last_modification_date': datetime.strftime(self.last_modification_date, '%d.%m.%Y %H:%M')
         }, open(f'{self.location}/data.json', 'w', encoding='utf-8'), indent=4)
