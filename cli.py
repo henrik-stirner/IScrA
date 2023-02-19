@@ -75,12 +75,17 @@ example_command_options.add_argument('-rt', '--repeat-text', type=int, default=0
 
 def mail(arguments: argparse.Namespace) -> str:
     if arguments.action == 'unread':
+        i = 0
+
         for unread_mail in core.fetch_unread_mails():
             # print(f'\n{unread_mail}\n')
             # the logger in core.py already does the job; however, we still need the for loop to trigger the generator
-            pass
 
-        return ''  # do not print "None"
+            # print the number of the mail
+            i += 1
+            print(f'\n\n({i})\n')
+
+        return f'\nThere is a total of {i} unread mails in your inbox.'
 
 
 mail_command = subparsers.add_parser('mail', help='tools for the IServ mail module')

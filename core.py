@@ -20,7 +20,7 @@ import webdriver
 # ----------
 
 
-VERSION = ('0', '0', '2', 'beta', 'early access')
+VERSION = ('0', '0', '2', 'beta', 'early-access')
 
 
 # ----------
