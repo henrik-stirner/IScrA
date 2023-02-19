@@ -16,12 +16,14 @@ You will need to add your own icons (listed in ./IScrA/assets/icon/missing.txt) 
 
 ## Features
 - <b>webdriver</b>
-  - logging in and out of IServ
+  - fetching information about and downloading tasks
+  - fetching information about and downloading texts
+  - fetching information about and downloading files
+  - sending messages to and fetching messages from messenger rooms
 - <b>mailer</b>
   - sending (scheduled) mails using SMTP
   - fetching received mails using IMAP4
 - <b>scraper</b>
-  - logging in and out of IServ
   - retrieving the users csrf token
   - fetching pending exercises
   - checking if new exercises have been assigned
