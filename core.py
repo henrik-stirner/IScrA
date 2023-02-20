@@ -260,6 +260,7 @@ def main():
     check_for_new_exercises()
 
     # webdriver
+    pass
 
 
 if __name__ == '__main__':
