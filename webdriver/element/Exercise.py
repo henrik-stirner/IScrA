@@ -244,7 +244,8 @@ class Exercise:
         to ensure that recordings of the same exercise at different points in time
         can represent the same exercise
         """
-        assert isinstance(other, Exercise)
+        if not isinstance(other, Exercise):
+            return False
 
         return self.title == other.title and self.subject == other.subject and self.owner == other.owner and \
             self.start_date == other.start_date and self.deadline == other.deadline

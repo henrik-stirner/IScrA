@@ -1,0 +1,94 @@
+* {
+    box-sizing: border-box;
+}
+
+/*
+-------------------------
+Menu Bar
+-------------------------
+*/
+
+QMenuBar {
+    background-color: palette(window);
+    border: 2px solid lightgrey;
+    border-radius: 5px;
+}
+
+/*
+-------------------------
+Status Bar
+-------------------------
+*/
+
+QStatusBar {
+    background-color: transparent;
+}
+
+/*
+-------------------------
+Button
+-------------------------
+*/
+
+QPushButton {
+    font-weight: 600;
+    background-color: lightgrey;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+QPushButton:hover {
+    background-color: white;
+}
+
+/*
+-------------------------
+Scroll Area
+-------------------------
+*/
+
+QScrollArea {
+    border: 0;
+}
+
+/*
+-------------------------
+Tab Widget
+-------------------------
+*/
+
+QTabWidget::pane {
+    border: 2px solid lightgrey;
+    border-top-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+QTabWidget::tab-bar:top {
+    /* prevent double borders by overlapping them */
+    top: 2px;
+}
+
+QTabBar::tab {
+    padding: 5px 10px;
+    border: 2px solid lightgrey;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    /* prevent double borders by overlapping them */
+    margin-right: -2px;
+}
+
+
+QTabBar:tab:!selected {
+    background-color: lightgrey;
+}
+
+QTabBar::tab:last {
+    /* fix the right border of the last tab */
+    margin-right: 2px;
+}
+
+QTabBar::tab:top:selected {
+    /* remove bottom border for selected tab */
+    border-bottom-color: palette(window);
+}

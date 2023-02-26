@@ -204,7 +204,8 @@ class File:
         to ensure that recordings of the same file at different points in time
         canNOT represent the same file
         """
-        assert isinstance(other, File)
+        if not isinstance(other, File):
+            return False
 
         return self.name == other.name and self.owner == other.owner and self.type == other.type and \
             self.remote_locations == other.remote_locations and self.size == other.size

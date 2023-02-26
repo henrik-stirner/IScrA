@@ -139,7 +139,8 @@ class MessengerRoom:
         to ensure that recordings of the same messenger room at different points in time
         can represent the same messenger room
         """
-        assert isinstance(other, MessengerRoom)
+        if not isinstance(other, MessengerRoom):
+            return False
 
         return self.token == other.token and self.owners == other.owners and self.is_group == other.is_group \
             and self.name == other.name

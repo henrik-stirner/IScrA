@@ -208,7 +208,8 @@ class Text:
         to ensure that recordings of the same text at different points in time
         can represent the same text
         """
-        assert isinstance(other, Text)
+        if not isinstance(other, Text):
+            return False
 
         return self.title == other.title and self.owner == other.owner and self.creation_date == other.creation_date
 

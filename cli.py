@@ -1,6 +1,14 @@
+from version import __version__
+
 import argparse
 
-import core
+from plyer import notification
+from os import startfile
+
+from auth import authenticate
+import mail
+import scraper
+import webdriver
 
 
 # ----------
@@ -26,7 +34,7 @@ subparsers = parser.add_subparsers(
 # ----------
 
 
-parser.add_argument('-v', '--version', action='version', version=f'%(prog)s {".".join(core.VERSION)}')
+parser.add_argument('-v', '--version', action='version', version=f'%(prog)s {".".join(__version__)}')
 
 
 # ----------
@@ -36,7 +44,7 @@ parser.add_argument('-v', '--version', action='version', version=f'%(prog)s {"."
 
 def version(arguments: argparse.Namespace) -> str:
     """returns the current IScrA version"""
-    return f'{parser.prog} {".".join(core.VERSION)}'
+    return f'{parser.prog} {".".join(__version__)}'
 
 
 version_command = subparsers.add_parser('version', help='returns the current IScrA version')
@@ -73,23 +81,54 @@ example_command_options.add_argument('-rt', '--repeat-text', type=int, default=0
 # ----------
 
 
-def mail(arguments: argparse.Namespace) -> str:
+def mail_command_function(arguments: argparse.Namespace) -> str:
+
+    # ----------
+    # check for and lazily fetch unread mails
+    # ----------
+
     if arguments.action == 'unread':
-        i = 0
+        my_receiver = mail.Receiver(*authenticate())
 
-        for unread_mail in core.fetch_unread_mails():
-            # print(f'\n{unread_mail}\n')
-            # the logger in core.py already does the job; however, we still need the for loop to trigger the generator
+        # get the ids of all the unread mails in the inbox
+        selection, mail_ids = my_receiver.get_ids_of_unread_mails()
 
-            # print the number of the mail
+        if not mail_ids:
+            # job is done if there are no unseen mails
+            return f'\nThere are no unread mails in your inbox.'
+
+        # inform the user about unread mails
+        number_of_unread_mails_info_string = f'There {"is" if len(mail_ids) == 1 else "are"} {len(mail_ids)} unread ' \
+                                             f'{"mail" if len(mail_ids) == 1 else "mails"} in your inbox!'
+        print(number_of_unread_mails_info_string)
+        notification.notify(title='IServ Mails',
+                            message=number_of_unread_mails_info_string,
+                            app_name='IScrA',
+                            app_icon='./assets/icon/mail.ico',
+                            timeout=3,)
+
+        i = 1
+        for from_user, subject, body in my_receiver.extract_mail_content_by_id(selection, mail_ids):
+            # "extract_text_by_mail_id()" is a generator
+            # it is not a good idea to download all the unread mails at once and load the into memory
+
+            # log unread mails because I do not want to save them anywhere
+            data = '\n====================' \
+                   f'\nSubject: {subject}\nSender: {from_user}\n----------\n{body}' \
+                   '\n===================='
+
+            print(f'\n\n({i})\n{data}')
+
             i += 1
-            print(f'\n\n({i})\n')
 
-        return f'\nThere is a total of {i} unread mails in your inbox.'
+        my_receiver.shutdown()
+        del my_receiver
+
+        return ''
 
 
 mail_command = subparsers.add_parser('mail', help='tools for the IServ mail module')
-mail_command.set_defaults(function=mail)
+mail_command.set_defaults(function=mail_command_function)
 
 mail_command_arguments = mail_command.add_argument_group('arguments')
 mail_command_arguments.add_argument('action', choices=['unread'], help='action to be performed by the client')
@@ -104,11 +143,34 @@ mail_command_arguments.add_argument('action', choices=['unread'], help='action t
 
 
 def exercise(arguments: argparse.Namespace) -> str:
+
+    # ----------
+    # checks if the users tasks have changed by comparing the currently pending tasks
+    # to the ones that were saved in a textfile the last time the "pending_tasks_changed()" function was called
+    #
+    # if the tasks changed, the textfile they were saved in will be opened
+    # ----------
+
     if arguments.action == 'new':
-        if path_to_new_exercise_file := core.check_for_new_exercises():
-            return f'Opening updated exercise table at "{path_to_new_exercise_file}"... '
+        my_scraper = scraper.Scraper(*authenticate())
+
+        if path_to_new_exercise_file := my_scraper.pending_exercises_changed():
+            # inform the user that their pending tasks have changed
+            notification.notify(title='IServ Exercises',
+                                message=f'Your pending IServ-exercises have changed!',
+                                app_name='IScrA',
+                                app_icon='./assets/icon/notification.ico',
+                                timeout=3,)
+            # open the new file with a list of the pending tasks
+            startfile(path_to_new_exercise_file)
+
+        my_scraper.shutdown()
+        del my_scraper
+
+        if path_to_new_exercise_file:
+            return f'A new list of your pending exercises has been saved at:\n "{path_to_new_exercise_file}".'
         else:
-            return 'Your pending exercises have not changed.'
+            return f'Your pending exercises have not changed.'
 
 
 exercise_command = subparsers.add_parser('exercise', help='tools for the IServ exercise module')
