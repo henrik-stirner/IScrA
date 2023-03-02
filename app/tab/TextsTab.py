@@ -2,7 +2,7 @@ import logging
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QVBoxLayout, QHBoxLayout, QWidget, QScrollArea, QLabel, QPushButton, QSizePolicy
+    QVBoxLayout, QHBoxLayout, QWidget, QScrollArea, QLabel, QPushButton, QLineEdit, QSizePolicy
 )
 
 from app.QtExt import util
@@ -46,6 +46,29 @@ class TextsTab(QScrollArea):
         self.load_texts_button = QPushButton('Load texts')
         self.load_texts_button.clicked.connect(self.load_texts)
 
+        self.filter_texts_header = QLabel('Filter: ')
+        self.filter_texts_header.setStyleSheet('QLabel { font-weight: bold; }')
+        self.filter_texts_header.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.filter_texts_entry = QLineEdit()
+        self.filter_texts_entry.setPlaceholderText('prompt')
+        self.filter_texts_entry.textChanged.connect(self.filter_texts)
+        self.filter_texts_entry.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
+
+        # self.execute_filter_texts_button = QPushButton('Apply Filter')
+        # self.execute_filter_texts_button.clicked.connect(self.filter_texts)
+        # self.execute_filter_texts_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.filter_texts_layout = QHBoxLayout()
+        self.filter_texts_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self.filter_texts_layout.addWidget(self.filter_texts_header)
+        self.filter_texts_layout.addWidget(self.filter_texts_entry)
+        # self.filter_texts_layout.addWidget(self.execute_filter_texts_button)
+
+        self.filter_texts_widget = QWidget()
+        self.filter_texts_widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
+        self.filter_texts_widget.setLayout(self.filter_texts_layout)
+
         self.texts_tab_texts_layout = QVBoxLayout()
         self.texts_tab_texts_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
@@ -55,6 +78,7 @@ class TextsTab(QScrollArea):
         self.texts_tab_main_layout = QVBoxLayout()
         self.texts_tab_main_layout.addWidget(self.load_texts_button)
         self.texts_tab_main_layout.addWidget(QHSeparationLine(line_width=3))
+        self.texts_tab_main_layout.addWidget(self.filter_texts_widget)
         self.texts_tab_main_layout.addWidget(self.texts_tab_texts_widget)
 
         self.texts_tab_widget = QWidget()
@@ -122,16 +146,36 @@ class TextsTab(QScrollArea):
                 QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
             text_text_widget.setLayout(text_text_layout)
 
-            # horizontal separation line
-            self.texts_tab_texts_layout.addWidget(QHSeparationLine(line_width=1))
-            # add widgets to the mail tab
-            self.texts_tab_texts_layout.addWidget(text_text_widget)
-            # horizontal separation line
-            self.texts_tab_texts_layout.addWidget(QHSeparationLine(line_width=1))
+            text_main_layout = QVBoxLayout()
+            text_main_layout.addWidget(QHSeparationLine(line_width=1))
+            text_main_layout.addWidget(text_text_widget)
+            text_main_layout.addWidget(QHSeparationLine(line_width=1))
+
+            text_main_widget = QWidget()
+            text_main_widget.setLayout(text_main_layout)
+
+            self.texts_tab_texts_layout.addWidget(text_main_widget)
 
         # load exercise button
         self.load_texts_button.setText('Reload texts')
         self.load_texts_button.setDisabled(False)
+
+    def filter_texts(self):
+        prompt = self.filter_texts_entry.text().lower()
+
+        for i in range(self.texts_tab_texts_layout.count()):
+            child = self.texts_tab_texts_layout.itemAt(i).widget()
+
+            if not isinstance(child, QWidget):
+                # skip
+                continue
+
+            if prompt not in util.get_text_of_child_labels(child).lower():
+                # hide
+                child.hide()
+            elif child.isHidden():
+                # show
+                child.show()
 
     def shutdown(self) -> None:
         # close sub-windows

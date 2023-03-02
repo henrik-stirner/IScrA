@@ -2,7 +2,7 @@ import logging
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QVBoxLayout, QHBoxLayout, QWidget, QScrollArea, QLabel, QPushButton, QSizePolicy
+    QVBoxLayout, QHBoxLayout, QWidget, QScrollArea, QLabel, QPushButton, QLineEdit, QSizePolicy
 )
 
 from app.QtExt import util
@@ -46,6 +46,29 @@ class ExercisesTab(QScrollArea):
         self.load_exercises_button = QPushButton('Load exercises')
         self.load_exercises_button.clicked.connect(self.load_exercises)
 
+        self.filter_exercises_header = QLabel('Filter: ')
+        self.filter_exercises_header.setStyleSheet('QLabel { font-weight: bold; }')
+        self.filter_exercises_header.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.filter_exercises_entry = QLineEdit()
+        self.filter_exercises_entry.setPlaceholderText('prompt')
+        self.filter_exercises_entry.textChanged.connect(self.filter_exercises)
+        self.filter_exercises_entry.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
+
+        # self.execute_filter_exercises_button = QPushButton('Apply Filter')
+        # self.execute_filter_exercises_button.clicked.connect(self.filter_exercises)
+        # self.execute_filter_exercises_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.filter_exercises_layout = QHBoxLayout()
+        self.filter_exercises_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self.filter_exercises_layout.addWidget(self.filter_exercises_header)
+        self.filter_exercises_layout.addWidget(self.filter_exercises_entry)
+        # self.filter_exercises_layout.addWidget(self.execute_filter_exercises_button)
+
+        self.filter_exercises_widget = QWidget()
+        self.filter_exercises_widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
+        self.filter_exercises_widget.setLayout(self.filter_exercises_layout)
+
         self.exercises_tab_exercises_layout = QVBoxLayout()
         self.exercises_tab_exercises_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
@@ -55,6 +78,7 @@ class ExercisesTab(QScrollArea):
         self.exercises_tab_main_layout = QVBoxLayout()
         self.exercises_tab_main_layout.addWidget(self.load_exercises_button)
         self.exercises_tab_main_layout.addWidget(QHSeparationLine(line_width=3))
+        self.exercises_tab_main_layout.addWidget(self.filter_exercises_widget)
         self.exercises_tab_main_layout.addWidget(self.exercises_tab_exercises_widget)
 
         self.exercises_tab_widget = QWidget()
@@ -128,16 +152,36 @@ class ExercisesTab(QScrollArea):
                 QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
             exercise_exercise_widget.setLayout(exercise_exercise_layout)
 
-            # horizontal separation line
-            self.exercises_tab_exercises_layout.addWidget(QHSeparationLine(line_width=1))
-            # add widgets to the mail tab
-            self.exercises_tab_exercises_layout.addWidget(exercise_exercise_widget)
-            # horizontal separation line
-            self.exercises_tab_exercises_layout.addWidget(QHSeparationLine(line_width=1))
+            exercise_main_layout = QVBoxLayout()
+            exercise_main_layout.addWidget(QHSeparationLine(line_width=1))
+            exercise_main_layout.addWidget(exercise_exercise_widget)
+            exercise_main_layout.addWidget(QHSeparationLine(line_width=1))
+
+            exercise_main_widget = QWidget()
+            exercise_main_widget.setLayout(exercise_main_layout)
+
+            self.exercises_tab_exercises_layout.addWidget(exercise_main_widget)
 
         # load exercise button
         self.load_exercises_button.setText('Reload exercises')
         self.load_exercises_button.setDisabled(False)
+
+    def filter_exercises(self):
+        prompt = self.filter_exercises_entry.text().lower()
+
+        for i in range(self.exercises_tab_exercises_layout.count()):
+            child = self.exercises_tab_exercises_layout.itemAt(i).widget()
+
+            if not isinstance(child, QWidget):
+                # skip
+                continue
+
+            if prompt not in util.get_text_of_child_labels(child).lower():
+                # hide
+                child.hide()
+            elif child.isHidden():
+                # show
+                child.show()
 
     def shutdown(self) -> None:
         # close sub-windows

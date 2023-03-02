@@ -3,10 +3,10 @@ import logging
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import (
-    QApplication, QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QLineEdit, QTextEdit
+    QApplication, QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QLineEdit,
+    QTextEdit, QFileDialog
 )
 
-from app.QtExt import util
 from app.QtExt.QSeparationLine import QHSeparationLine
 
 import mail
@@ -88,6 +88,16 @@ class ComposeMailWindow(QScrollArea):
         self.subject_widget = QWidget()
         self.subject_widget.setLayout(self.subject_layout)
 
+        # clear button
+        self.clear_inputs_button = QPushButton('Clear')
+        self.clear_inputs_button.clicked.connect(self.empty_inputs)
+        self.clear_inputs_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+        # load template button
+        self.load_mail_template_button = QPushButton('Load mail template')
+        self.load_mail_template_button.clicked.connect(self.load_mail_template)
+        self.load_mail_template_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
         # body
         self.body_input = QTextEdit()
         self.body_input.setAcceptRichText(False)
@@ -107,7 +117,11 @@ class ComposeMailWindow(QScrollArea):
         self.main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.main_layout.addWidget(self.to_user_widget)
         self.main_layout.addWidget(self.subject_widget)
+        self.main_layout.addWidget(QHSeparationLine(line_width=1))
+        self.main_layout.addWidget(self.clear_inputs_button)
+        self.main_layout.addWidget(self.load_mail_template_button)
         self.main_layout.addWidget(self.body_input)
+        self.main_layout.addWidget(QHSeparationLine(line_width=1))
         self.main_layout.addWidget(self.send_mail_button)
 
         self.main_widget = QWidget()
@@ -119,6 +133,20 @@ class ComposeMailWindow(QScrollArea):
         self.setWidgetResizable(True)
 
         self.setWidget(self.main_widget)
+
+    def load_mail_template(self):
+        path_to_template = QFileDialog.getOpenFileName(
+            self,
+            caption='Select Text File',
+            directory='./data/mail/template/plaintext/',
+            filter='*.txt'
+        )[0]
+
+        try:
+            with open(path_to_template, 'r', encoding='utf-8') as template_file:
+                self.body_input.setText(template_file.read())
+        except Exception as exception:
+            logger.exception(exception)
 
     def empty_inputs(self) -> None:
         self.to_user_input.setText('')

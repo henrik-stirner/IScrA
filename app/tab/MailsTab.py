@@ -2,14 +2,15 @@ import logging
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QVBoxLayout, QHBoxLayout, QWidget, QScrollArea, QLabel, QPushButton, QSizePolicy
+    QVBoxLayout, QHBoxLayout, QWidget, QScrollArea, QLabel, QPushButton, QLineEdit, QSizePolicy
 )
 
 from app.QtExt import util
 from app.QtExt.QSeparationLine import QHSeparationLine
 
-from app.window.ComposeMailWindow import ComposeMailWindow
 from app.window.DisplayMailWindow import DisplayMailWindow
+from app.window.ComposeMailWindow import ComposeMailWindow
+from app.window.MailScheduleWindow import MailScheduleWindow
 
 import mail
 
@@ -41,8 +42,9 @@ class MailsTab(QScrollArea):
         self._mail_transmitter = None
 
         # if we do not keep a reference to our windows, they will be closed immediately
-        self.compose_mail_window = None
         self.display_mail_window = None
+        self.compose_mail_window = None
+        self.edit_mail_schedule_window = None
 
         # ----------
         # actual layout
@@ -54,6 +56,32 @@ class MailsTab(QScrollArea):
         self.compose_mail_button = QPushButton('Compose new mail')
         self.compose_mail_button.clicked.connect(self.compose_mail)
 
+        self.edit_mail_schedule_button = QPushButton('Edit mail schedule')
+        self.edit_mail_schedule_button.clicked.connect(self.edit_mail_schedule)
+
+        self.filter_mails_header = QLabel('Filter: ')
+        self.filter_mails_header.setStyleSheet('QLabel { font-weight: bold; }')
+        self.filter_mails_header.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.filter_mails_entry = QLineEdit()
+        self.filter_mails_entry.setPlaceholderText('prompt')
+        self.filter_mails_entry.textChanged.connect(self.filter_mails)
+        self.filter_mails_entry.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
+
+        # self.execute_filter_mails_button = QPushButton('Apply Filter')
+        # self.execute_filter_mails_button.clicked.connect(self.filter_mails)
+        # self.execute_filter_mails_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.filter_mails_layout = QHBoxLayout()
+        self.filter_mails_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self.filter_mails_layout.addWidget(self.filter_mails_header)
+        self.filter_mails_layout.addWidget(self.filter_mails_entry)
+        # self.filter_mails_layout.addWidget(self.execute_filter_mails_button)
+
+        self.filter_mails_widget = QWidget()
+        self.filter_mails_widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
+        self.filter_mails_widget.setLayout(self.filter_mails_layout)
+
         self.mails_tab_mails_layout = QVBoxLayout()
         self.mails_tab_mails_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
@@ -63,7 +91,9 @@ class MailsTab(QScrollArea):
         self.mails_tab_main_layout = QVBoxLayout()
         self.mails_tab_main_layout.addWidget(self.load_mails_button)
         self.mails_tab_main_layout.addWidget(self.compose_mail_button)
+        self.mails_tab_main_layout.addWidget(self.edit_mail_schedule_button)
         self.mails_tab_main_layout.addWidget(QHSeparationLine(line_width=3))
+        self.mails_tab_main_layout.addWidget(self.filter_mails_widget)
         self.mails_tab_main_layout.addWidget(self.mails_tab_mails_widget)
 
         self.mails_tab_widget = QWidget()
@@ -80,17 +110,6 @@ class MailsTab(QScrollArea):
 
         # immediately load the mails because it is quick and handy
         self.load_mails()
-
-    def compose_mail(self):
-        if not self.compose_mail_window:
-            if not self._mail_transmitter:
-                # create mail receiver if not exists
-                self._mail_transmitter = mail.Transmitter(self._iserv_username, self._iserv_password)
-
-            self.compose_mail_window = ComposeMailWindow(self._mail_transmitter)
-
-        self.compose_mail_window.empty_inputs()
-        self.compose_mail_window.show()
 
     def display_mail(self, selection: str, mail_id: int) -> None:
         if not self.display_mail_window:
@@ -153,12 +172,15 @@ class MailsTab(QScrollArea):
             mail_mail_widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
             mail_mail_widget.setLayout(mail_mail_layout)
 
-            # horizontal separation line
-            self.mails_tab_mails_layout.addWidget(QHSeparationLine(line_width=1))
-            # add widgets to the mail tab
-            self.mails_tab_mails_layout.addWidget(mail_mail_widget)
-            # horizontal separation line
-            self.mails_tab_mails_layout.addWidget(QHSeparationLine(line_width=1))
+            mail_main_layout = QVBoxLayout()
+            mail_main_layout.addWidget(QHSeparationLine(line_width=1))
+            mail_main_layout.addWidget(mail_mail_widget)
+            mail_main_layout.addWidget(QHSeparationLine(line_width=1))
+
+            mail_main_widget = QWidget()
+            mail_main_widget.setLayout(mail_main_layout)
+
+            self.mails_tab_mails_layout.addWidget(mail_main_widget)
 
             # for accessing the right mail id
             i += 1
@@ -166,6 +188,41 @@ class MailsTab(QScrollArea):
         # load mails button
         self.load_mails_button.setText('Reload mails')
         self.load_mails_button.setDisabled(False)
+
+    def compose_mail(self):
+        if not self.compose_mail_window:
+            if not self._mail_transmitter:
+                # create mail receiver if not exists
+                self._mail_transmitter = mail.Transmitter(self._iserv_username, self._iserv_password)
+
+            self.compose_mail_window = ComposeMailWindow(self._mail_transmitter)
+
+        self.compose_mail_window.empty_inputs()
+        self.compose_mail_window.show()
+
+    def edit_mail_schedule(self):
+        if not self.edit_mail_schedule_window:
+            self.edit_mail_schedule_window = MailScheduleWindow()
+
+        self.edit_mail_schedule_window.load_mail_schedule()
+        self.edit_mail_schedule_window.show()
+
+    def filter_mails(self):
+        prompt = self.filter_mails_entry.text().lower()
+
+        for i in range(self.mails_tab_mails_layout.count()):
+            child = self.mails_tab_mails_layout.itemAt(i).widget()
+
+            if not isinstance(child, QWidget):
+                # skip
+                continue
+
+            if prompt not in util.get_text_of_child_labels(child).lower():
+                # hide
+                child.hide()
+            elif child.isHidden():
+                # show
+                child.show()
 
     def shutdown(self) -> None:
         # close sub-windows
