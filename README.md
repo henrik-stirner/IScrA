@@ -3,15 +3,18 @@
 WORK IN PROGRESS
 
 # IScrA - IServ Scraping Automations
-<b>Make sure to add the missing dotenv and config files before running.</b>
+<b>Make sure to add the missing dotenv and config files before running.<br/>
+_CREDGEN.PY_ will do most of the work you.</b>
+
 - ./IScrA/.env
   - username
 - ./IScrA/config.ini
   - base domain
   - ports (imap, smtp)
 - ./IScrA/subject.ini
-- (./app/config/MainWindow.ini)
-  - (initial window size and position)
+  - subject keywords for guessing the subjects of exercises
+- ./app/config/MainWindow.ini
+  - initial window size and position
 
 The icons in ./IScrA/assets/icon/ are missing. <br/>
 You will need to add your own icons (listed in ./IScrA/assets/icon/missing.txt) as they will be used for sending notifications (see ./IScrA/core.py). 
@@ -32,10 +35,10 @@ You will need to add your own icons (listed in ./IScrA/assets/icon/missing.txt) 
 
 ## \_\_main__.py
 If you run the main file, 
-- your mail schedule will be processed and <br/>
+- your mail schedule will be processed and 
 - the app will be launched. 
 
 You can use the app to
-- view inbox mails and send mails, <br/>
-- view exercises and <br/>
+- view inbox mails and send mails, 
+- view exercises and 
 - view texts.

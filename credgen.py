@@ -45,7 +45,7 @@ def create_main_window_ini() -> None:
 
 
 def create_subject_ini() -> None:
-    print('Creating ./IScrA/subject.ini, which contains German keywords to detect subjects of exercises...')
+    print('Creating ./IScrA/subject.ini, which contains German keywords to guess subjects of exercises...')
 
     with open('./subject.ini.example', 'r', encoding='utf-8') as subject_ini_preset:
         with open('./subject.ini', 'w', encoding='utf-8') as subject_ini_file:
