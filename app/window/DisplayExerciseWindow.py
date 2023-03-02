@@ -6,7 +6,7 @@ import webbrowser
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import (
-    QApplication, QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSizePolicy
+    QApplication, QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QFileDialog
 )
 
 from app.QtExt import util
@@ -63,6 +63,7 @@ class DisplayExerciseWindow(QScrollArea):
         self.main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         self.main_widget = QWidget()
+        self.main_widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
         self.main_widget.setLayout(self.main_layout)
 
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
@@ -70,6 +71,10 @@ class DisplayExerciseWindow(QScrollArea):
         self.setWidgetResizable(True)
 
         self.setWidget(self.main_widget)
+
+    def save_exercise(self, exercise: webdriver.element.Exercise):
+        save_path = str(QFileDialog.getExistingDirectory(self, 'Select Directory'))
+        self._webdriver_session.save_exercise(exercise=exercise, override=False, to_location=save_path)
 
     def display_exercise(self, exercise: webdriver.element.Exercise) -> None:
         if self.current_exercise == exercise:
@@ -149,9 +154,9 @@ class DisplayExerciseWindow(QScrollArea):
         self.main_layout.addWidget(deadline_widget)
 
         # subject
-        subject_header_label = QLabel('Subject: ')
+        subject_header_label = QLabel('Subject hint: ')
 
-        subject_description_label = QLabel(str(exercise.subject))
+        subject_description_label = QLabel(" | ".join([subject.capitalize() for subject in exercise.subject]))
 
         subject_layout = QHBoxLayout()
         subject_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -166,22 +171,24 @@ class DisplayExerciseWindow(QScrollArea):
         self.main_layout.addWidget(subject_widget)
 
         # tags
-        tags_header_label = QLabel('Tags: ')
+        if exercise.tags:
+            tags_header_label = QLabel('Tags: ')
 
-        tags_layout = QHBoxLayout()
-        tags_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        tags_layout.addWidget(tags_header_label)
+            tags_layout = QHBoxLayout()
+            tags_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+            tags_layout.addWidget(tags_header_label)
 
-        for tag in exercise.tags:
-            tags_layout.addWidget(QLabel(
-                str(tag).upper()
-            ))
+            for tag in exercise.tags:
+                tag_label = QLabel(str(tag))
+                tag_label.setStyleSheet('QLabel { background-color: lightgrey; padding: 2px 5px; border-radius: 5px }')
 
-        tags_widget = QWidget()
-        tags_widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
-        tags_widget.setLayout(tags_layout)
+                tags_layout.addWidget(tag_label)
 
-        self.main_layout.addWidget(tags_widget)
+            tags_widget = QWidget()
+            tags_widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+            tags_widget.setLayout(tags_layout)
+
+            self.main_layout.addWidget(tags_widget)
 
         # description
         description_label = QLabel(str(exercise.description))
@@ -191,7 +198,7 @@ class DisplayExerciseWindow(QScrollArea):
         description_layout.addWidget(description_label)
 
         description_widget = QWidget()
-        description_widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+        description_widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Minimum)
         description_widget.setLayout(description_layout)
 
         self.main_layout.addWidget(QHSeparationLine(line_width=1))
@@ -225,6 +232,14 @@ class DisplayExerciseWindow(QScrollArea):
 
         self.main_layout.addWidget(QHSeparationLine(line_width=1))
         self.main_layout.addWidget(attachments_widget)
+
+        # save button
+        save_button = QPushButton('Save this exercise')
+        save_button.clicked.connect(lambda this_exercise=exercise: self.save_exercise(this_exercise))
+        save_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.main_layout.addWidget(QHSeparationLine(line_width=1))
+        self.main_layout.addWidget(save_button)
 
     def shutdown(self) -> None:
         # log out and close connections

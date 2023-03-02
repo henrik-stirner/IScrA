@@ -104,13 +104,14 @@ class ComposeMailWindow(QScrollArea):
         # ----------
 
         self.main_layout = QVBoxLayout()
-        self.main_layout.setAlignment(Qt.AlignmentFlag.AlignTop, )
+        self.main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.main_layout.addWidget(self.to_user_widget)
         self.main_layout.addWidget(self.subject_widget)
         self.main_layout.addWidget(self.body_input)
         self.main_layout.addWidget(self.send_mail_button)
 
         self.main_widget = QWidget()
+        self.main_widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
         self.main_widget.setLayout(self.main_layout)
 
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)

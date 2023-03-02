@@ -8,7 +8,7 @@ from selenium.webdriver.support import expected_conditions
 from selenium.common.exceptions import TimeoutException
 
 from datetime import datetime
-from os import path, mkdir
+from os import path, mkdir, makedirs
 from shutil import rmtree
 import json
 
@@ -185,7 +185,7 @@ class Exercise:
         """creates a directory in which the exercises content, attachments and data are saved in (in subdirectories)"""
         if self.location is None:
             self.location = f'{to_location}/{self.safe_title}'
-            mkdir(self.location)
+            makedirs(self.location)
         elif override:
             rmtree(self.location)
             mkdir(self.location)

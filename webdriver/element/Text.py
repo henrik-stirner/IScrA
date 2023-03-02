@@ -5,12 +5,10 @@ from selenium.webdriver.firefox.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
-from selenium.common.exceptions import TimeoutException, WebDriverException
-
-from time import sleep
+from selenium.webdriver.remote.webdriver import WebElement
 
 from datetime import datetime
-from os import path, mkdir
+from os import path, mkdir, makedirs
 from shutil import rmtree
 import json
 
@@ -157,11 +155,30 @@ class Text:
 
         return from_string
 
+    def fetch_content(self, webdriver: WebDriver) -> list[WebElement] or list:
+        webdriver.get(self.remote_location)
+
+        # they used an iframe ...
+        webdriver.switch_to.frame(webdriver.find_element(By.XPATH, '//iframe[@id="etherpad"]'))
+
+        # ... *pause - waiting for the etherpad to load* ...
+        WebDriverWait(webdriver, self._timeout).until(expected_conditions.presence_of_element_located(
+            (By.XPATH, '//div[@class="editorcontainer initialized"]')))
+
+        # ... containing an iFrAme ...
+        webdriver.switch_to.frame(webdriver.find_element(By.XPATH, '//iframe[@name="ace_outer"]'))
+        # ... containing aNoThER iFRaMe
+        webdriver.switch_to.frame(webdriver.find_element(By.XPATH, '//iframe[@name="ace_inner"]'))
+
+        ace_lines = webdriver.find_elements(By.XPATH, '//div[@class="ace-line"]')
+
+        return ace_lines
+
     def save(self, webdriver: WebDriver, override: bool = True, to_location: str = config['path']['text']) -> bool:
         """creates a directory in which the texts content and data are saved in"""
         if self.location is None:
             self.location = f'{to_location}/{self.safe_title}'
-            mkdir(self.location)
+            makedirs(self.location)
         elif override:
             rmtree(self.location)
             mkdir(self.location)
@@ -169,22 +186,7 @@ class Text:
             return False
 
         with open(f'{self.location}/{self.safe_title}.txt', 'w', encoding='utf-8') as outfile:
-            webdriver.get(self.remote_location)
-
-            # they used an iframe ...
-            webdriver.switch_to.frame(webdriver.find_element(By.XPATH, '//iframe[@id="etherpad"]'))
-
-            # ... *pause - waiting for the etherpad to load* ...
-            WebDriverWait(webdriver, self._timeout).until(expected_conditions.presence_of_element_located(
-                (By.XPATH, '//div[@class="editorcontainer initialized"]')))
-
-            # ... containing an iFrAme ...
-            webdriver.switch_to.frame(webdriver.find_element(By.XPATH, '//iframe[@name="ace_outer"]'))
-            # ... containing aNoThER iFRaMe
-            webdriver.switch_to.frame(webdriver.find_element(By.XPATH, '//iframe[@name="ace_inner"]'))
-
-            ace_lines = webdriver.find_elements(By.XPATH, '//div[@class="ace-line"]')
-            for ace_line in ace_lines:
+            for ace_line in self.fetch_content(webdriver=webdriver):
                 outfile.write(f'{ace_line.text}\n')
 
             outfile.close()

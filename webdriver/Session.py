@@ -7,6 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
 from selenium.common.exceptions import TimeoutException, WebDriverException
+from selenium.webdriver.remote.webdriver import WebElement
 
 import requests
 
@@ -285,6 +286,9 @@ class Session:
             timeout=self._timeout
         ) for name, remote_location in self._text_module.remote_text_locations.items() if any(
             keyword.lower() in name.lower() for keyword in keywords)]
+
+    def fetch_text_content(self, text: Text) -> list[WebElement] or list:
+        return text.fetch_content(webdriver=self._webdriver)
 
     def save_all_texts(self, override: bool = True, to_location: str = config['path']['text']) -> None:
         """saves all texts (webdriver.element.Text.Text) in this session's TextModule"""

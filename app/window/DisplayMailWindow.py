@@ -60,6 +60,7 @@ class DisplayMailWindow(QScrollArea):
         self.main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         self.main_widget = QWidget()
+        self.main_widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
         self.main_widget.setLayout(self.main_layout)
 
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
@@ -124,7 +125,7 @@ class DisplayMailWindow(QScrollArea):
         body_layout.addWidget(body_label)
 
         body_widget = QWidget()
-        body_widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+        body_widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Minimum)
         body_widget.setLayout(body_layout)
 
         self.main_layout.addWidget(QHSeparationLine(line_width=1))
