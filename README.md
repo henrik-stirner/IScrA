@@ -10,6 +10,8 @@ WORK IN PROGRESS
   - base domain
   - ports (imap, smtp)
 - ./IScrA/subject.ini
+- (./app/config/MainWindow.ini)
+  - (initial window size and position)
 
 The icons in ./IScrA/assets/icon/ are missing. <br/>
 You will need to add your own icons (listed in ./IScrA/assets/icon/missing.txt) as they will be used for sending notifications (see ./IScrA/core.py). 
@@ -27,3 +29,13 @@ You will need to add your own icons (listed in ./IScrA/assets/icon/missing.txt) 
   - retrieving the users csrf token
   - fetching pending exercises
   - checking if new exercises have been assigned
+
+## \_\_main__.py
+If you run the main file, 
+- your mail schedule will be processed and <br/>
+- the app will be launched. 
+
+You can use the app to
+- view inbox mails and send mails, <br/>
+- view exercises and <br/>
+- view texts.
