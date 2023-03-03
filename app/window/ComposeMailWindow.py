@@ -9,6 +9,8 @@ from PyQt6.QtWidgets import (
 
 from app.QtExt.QSeparationLine import QHSeparationLine
 
+from app.dialog.WarnDialog import WarnDialog
+
 import mail
 
 
@@ -101,7 +103,8 @@ class ComposeMailWindow(QScrollArea):
         # body
         self.body_input = QTextEdit()
         self.body_input.setAcceptRichText(False)
-        self.body_input.setPlaceholderText('Body')
+        self.body_input.setPlaceholderText('Dear John, \n'
+                                           'I wanted to ask you if...')
         self.body_input.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
 
         # send button
@@ -153,7 +156,31 @@ class ComposeMailWindow(QScrollArea):
         self.subject_input.setText('')
         self.body_input.setText('')
 
+    def show_warn_dialog(self, caption: str, title: str, description: str):
+        warn_dialog = WarnDialog(self, title=title, description=description, caption=caption)
+        warn_dialog.show()
+
     def send_mail(self) -> None:
+        # check if all the fields have been filled in correctly
+        to_user = self.to_user_input.text()
+        mandatory_substrings = ['.']
+        forbidden_substrings = [' ', '@']
+        if (
+                not to_user or
+                any(mandatory_substring not in to_user for mandatory_substring in mandatory_substrings) or
+                any(forbidden_substring in to_user for forbidden_substring in forbidden_substrings)
+        ):
+            self.show_warn_dialog(
+                caption='Warning',
+                title='The mail has not been sent. ',
+                description='Please enter a valid username. (for example: john.doe)\n'
+                            'The rest of the mail address will be appended automatically. \n'
+                            'You can not send mails to external mail servers. '
+            )
+
+            return
+
+        # try to send the mail
         try:
             self._mail_transmitter.send_mail(
                 to_user=self.to_user_input.text(),
@@ -166,6 +193,13 @@ class ComposeMailWindow(QScrollArea):
 
         except Exception as exception:
             logger.exception(exception)
+
+            self.show_warn_dialog(
+                caption='Error',
+                title='Was not able to send the mail.',
+                description='Something went wrong while trying to send this mail. \n'
+                            'Please verify your input and try again.'
+            )
 
     def shutdown(self) -> None:
         # log out and close connections

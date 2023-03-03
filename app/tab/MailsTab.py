@@ -2,11 +2,12 @@ import logging
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QVBoxLayout, QHBoxLayout, QWidget, QScrollArea, QLabel, QPushButton, QLineEdit, QSizePolicy
+    QVBoxLayout, QHBoxLayout, QWidget, QScrollArea, QLabel, QPushButton, QLineEdit, QSizePolicy, QComboBox, QCheckBox,
+    QSpinBox
 )
 
 from app.QtExt import util
-from app.QtExt.QSeparationLine import QHSeparationLine
+from app.QtExt.QSeparationLine import QVSeparationLine, QHSeparationLine
 
 from app.window.DisplayMailWindow import DisplayMailWindow
 from app.window.ComposeMailWindow import ComposeMailWindow
@@ -39,6 +40,7 @@ class MailsTab(QScrollArea):
         self._iserv_password = iserv_password
 
         self._mail_receiver = None
+        self._mail_receiver = mail.Receiver(self._iserv_username, self._iserv_password)
         self._mail_transmitter = None
 
         # if we do not keep a reference to our windows, they will be closed immediately
@@ -49,6 +51,39 @@ class MailsTab(QScrollArea):
         # ----------
         # actual layout
         # ----------
+
+        self.mail_selection_combo_box = QComboBox()
+        self.mail_selection_combo_box.addItems(
+            [element[2] for element in self._mail_receiver.get_available_mailboxes()])
+        self.mail_selection_combo_box.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.unread_only_check_box = QCheckBox('Unread only')
+        self.unread_only_check_box.setChecked(True)
+        self.unread_only_check_box.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.max_amount_spin_box = QSpinBox()
+        self.max_amount_spin_box.setRange(1, 999999999)
+        self.max_amount_spin_box.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        self.max_amount_spin_box.setEnabled(False)
+
+        self.max_amount_check_box = QCheckBox('Max amount')
+        self.max_amount_check_box.setChecked(False)
+        self.max_amount_check_box.clicked.connect(
+            lambda state: self.max_amount_spin_box.setEnabled(self.max_amount_check_box.isChecked()))
+        self.max_amount_check_box.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.mail_selection_layout = QHBoxLayout()
+        self.mail_selection_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.mail_selection_layout.addWidget(self.mail_selection_combo_box)
+        self.mail_selection_layout.addWidget(QVSeparationLine(line_width=1))
+        self.mail_selection_layout.addWidget(self.unread_only_check_box)
+        self.mail_selection_layout.addWidget(QVSeparationLine(line_width=1))
+        self.mail_selection_layout.addWidget(self.max_amount_check_box)
+        self.mail_selection_layout.addWidget(self.max_amount_spin_box)
+
+        self.mail_selection_widget = QWidget()
+        self.mail_selection_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.mail_selection_widget.setLayout(self.mail_selection_layout)
 
         self.load_mails_button = QPushButton('Load mails')
         self.load_mails_button.clicked.connect(self.load_mails)
@@ -89,6 +124,7 @@ class MailsTab(QScrollArea):
         self.mails_tab_mails_widget.setLayout(self.mails_tab_mails_layout)
 
         self.mails_tab_main_layout = QVBoxLayout()
+        self.mails_tab_main_layout.addWidget(self.mail_selection_widget)
         self.mails_tab_main_layout.addWidget(self.load_mails_button)
         self.mails_tab_main_layout.addWidget(self.compose_mail_button)
         self.mails_tab_main_layout.addWidget(self.edit_mail_schedule_button)
@@ -123,18 +159,26 @@ class MailsTab(QScrollArea):
         self.load_mails_button.setText('Loading mails...')
         self.load_mails_button.setDisabled(True)
 
-        if not self._mail_receiver:
-            # create mail receiver if not exists
-            self._mail_receiver = mail.Receiver(self._iserv_username, self._iserv_password)
-
         # remove all widgets from the layout
         util.clear_layout(self.mails_tab_mails_layout)
 
-        selection, mail_ids = self._mail_receiver.get_ids_of_unread_mails()
+        maximum_mail_amount = self.max_amount_spin_box.value() if self.max_amount_check_box.isChecked() else None
+
+        if self.unread_only_check_box.isChecked():
+            selection, mail_ids = self._mail_receiver.get_ids_of_unread_mails(
+                selection=self.mail_selection_combo_box.currentText(),
+                max_amount=maximum_mail_amount
+            )
+        else:
+            selection, mail_ids = self._mail_receiver.get_ids_of_mails(
+                selection=self.mail_selection_combo_box.currentText(),
+                max_amount=maximum_mail_amount
+            )
 
         if not mail_ids:
             self.mails_tab_mails_layout.addWidget(QLabel(
-                'Currently, there are no unread mails in your inbox.'
+                f'Currently, there are no {"unread " if self.unread_only_check_box.isChecked() else ""}'
+                f'mails in the selected mailbox.'
             ))
 
         # there are unread mails, add the new widgets

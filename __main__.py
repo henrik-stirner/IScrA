@@ -11,7 +11,6 @@ from auth import authenticate
 import mail
 
 import sys
-from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication
 from app.MainWindow import MainWindow
 

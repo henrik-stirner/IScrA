@@ -68,7 +68,7 @@ class Receiver:
 
         return mailboxes
 
-    def get_ids_of_unread_mails(self, selection: str = 'INBOX') -> (str, [str] or []):
+    def get_ids_of_unread_mails(self, selection: str = 'INBOX', max_amount=None) -> (str, [str] or []):
         """checks the inbox for unread mails and returns a list of their ids"""
         self._imap_connection.select(selection, readonly=True)
 
@@ -78,12 +78,20 @@ class Receiver:
         for mail_id_block in response:
             mail_ids += mail_id_block.decode().split()
 
-        # close inbox
+        # close selection
         self._imap_connection.close()
 
-        return selection, mail_ids
+        number_of_mails = len(mail_ids)
 
-    def get_ids_of_selected_mails(self, selection: str, amount: int) -> (str, [str] or []):
+        if max_amount is None:
+            # setting the max amount to the number of mails means that all mails will be returned
+            max_amount = number_of_mails
+
+        # the fetch function of imaplib accepts only strings as message_sets (mail ids)
+        # therefore, turn the ids into string
+        return selection, [str(mail_id) for mail_id in range(number_of_mails, number_of_mails - max_amount, -1)]
+
+    def get_ids_of_mails(self, selection: str = 'INBOX', max_amount=None) -> (str, [str] or []):
         """checks the inbox for unread mails and returns a list of their ids"""
         status, response = self._imap_connection.select(selection, readonly=True)
         # total number of emails
@@ -92,9 +100,13 @@ class Receiver:
         # close selection
         self._imap_connection.close()
 
+        if max_amount is None:
+            # setting the max amount to the number of mails means that all mails will be returned
+            max_amount = number_of_mails
+
         # the fetch function of imaplib accepts only strings as message_sets (mail ids)
         # therefore, turn the ids into string
-        return selection, [str(mail_id) for mail_id in range(number_of_mails, number_of_mails - amount, -1)]
+        return selection, [str(mail_id) for mail_id in range(number_of_mails, number_of_mails - max_amount, -1)]
 
     def extract_mail_content_by_id(self, selection: str, mail_ids: list) -> (str, str, str):
         """generator; gets information about and content of a mail by its id"""
