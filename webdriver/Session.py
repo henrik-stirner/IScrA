@@ -99,6 +99,9 @@ class Session:
             ))
             self._webdriver.get(f'https://{config["server"]["domain"]}/iserv')
             assert 'IServ' in self._webdriver.title
+
+            # TODO: set language to German
+
         except TimeoutException:
             logger.exception('Failed trying to log into IServ. The username or password is invalid.')
             raise ValueError('The username or password is invalid.')

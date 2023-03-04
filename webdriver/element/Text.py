@@ -12,6 +12,8 @@ from os import path, mkdir, makedirs
 from shutil import rmtree
 import json
 
+from webdriver.element.util import make_alphanumeric
+
 
 # ----------
 # logger
@@ -106,7 +108,7 @@ class Text:
 
         # TODO: only works if the language is set to German ('Details zu ')
         self.title = webdriver.find_element(By.TAG_NAME, 'h1').text.removeprefix('Details zu ')
-        self.safe_title = self.remove_forbidden_characters(self.title)
+        self.safe_title = make_alphanumeric(self.title)
 
         webdriver.get(f'https://{config["server"]["domain"]}{config["domain_extension"]["text"]}')
 
@@ -147,13 +149,6 @@ class Text:
             self._fetch_remote(webdriver, from_location)
         else:
             self._fetch_local(from_location)
-
-    @staticmethod
-    def remove_forbidden_characters(from_string: str, forbidden_characters: str = '"*<>?/\\|:') -> str:
-        for character in forbidden_characters:
-            from_string = from_string.replace(character, '')
-
-        return from_string
 
     def fetch_content(self, webdriver: WebDriver) -> list[WebElement] or list:
         webdriver.get(self.remote_location)

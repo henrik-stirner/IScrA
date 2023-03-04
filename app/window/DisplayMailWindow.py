@@ -75,8 +75,8 @@ class DisplayMailWindow(QScrollArea):
 
         util.clear_layout(self.main_layout)
 
-        from_user, subject, body = '', '', ''
-        for from_user, subject, body in self._mail_receiver.extract_mail_content_by_id(
+        date, subject, from_sender, to_receiver, body = '', '', '', '', ''
+        for date, subject, from_sender, to_receiver, body in self._mail_receiver.extract_mail_content_by_id(
                 selection=selection, mail_ids=[mail_id]):
             # this for loop is needed, because extract_mail_content_by_id() is a generator
             pass
@@ -102,10 +102,10 @@ class DisplayMailWindow(QScrollArea):
 
         # from user
         from_user_header_label = QLabel('From: ')
-        from_user_header_label.setStyleSheet('QLabel { color: lightgrey; font-weight: bold; }')
+        from_user_header_label.setStyleSheet('QLabel { color: darkgrey; font-weight: bold; }')
 
-        from_user_description_label = QLabel(from_user)
-        from_user_description_label.setStyleSheet('QLabel { color: lightgrey; }')
+        from_user_description_label = QLabel(from_sender)
+        from_user_description_label.setStyleSheet('QLabel { color: darkgrey; }')
 
         from_user_layout = QHBoxLayout()
         from_user_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -117,6 +117,42 @@ class DisplayMailWindow(QScrollArea):
         from_user_widget.setLayout(from_user_layout)
 
         self.main_layout.addWidget(from_user_widget)
+
+        # to user
+        to_user_header_label = QLabel('To: ')
+        to_user_header_label.setStyleSheet('QLabel { color: darkgrey; font-weight: bold; }')
+
+        to_user_description_label = QLabel(to_receiver)
+        to_user_description_label.setStyleSheet('QLabel { color: darkgrey; }')
+
+        to_user_layout = QHBoxLayout()
+        to_user_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        to_user_layout.addWidget(to_user_header_label)
+        to_user_layout.addWidget(to_user_description_label)
+
+        to_user_widget = QWidget()
+        to_user_widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+        to_user_widget.setLayout(to_user_layout)
+
+        self.main_layout.addWidget(to_user_widget)
+
+        # date
+        date_header_label = QLabel('Date: ')
+        date_header_label.setStyleSheet('QLabel { color: darkgrey; font-weight: bold; }')
+
+        date_description_label = QLabel(date)
+        date_description_label.setStyleSheet('QLabel { color: darkgrey; }')
+
+        date_layout = QHBoxLayout()
+        date_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        date_layout.addWidget(date_header_label)
+        date_layout.addWidget(date_description_label)
+
+        date_widget = QWidget()
+        date_widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+        date_widget.setLayout(date_layout)
+
+        self.main_layout.addWidget(date_widget)
 
         # body
         body_label = QLabel(body)
@@ -130,6 +166,8 @@ class DisplayMailWindow(QScrollArea):
 
         self.main_layout.addWidget(QHSeparationLine(line_width=1))
         self.main_layout.addWidget(body_widget)
+
+        # TODO: attachments
 
     def shutdown(self) -> None:
         # log out and close connections

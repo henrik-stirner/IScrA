@@ -12,6 +12,8 @@ from os import path, mkdir, makedirs
 from shutil import rmtree
 import json
 
+from webdriver.element.util import make_alphanumeric
+
 from webdriver import Session
 
 
@@ -123,7 +125,7 @@ class Exercise:
         self.tags = [a.text for a in webdriver.find_elements(By.XPATH, '//a[@class="label label-info exercise-tag"]')]
 
         self.title = webdriver.find_element(By.XPATH, '//h3[@class="panel-title"]').text
-        self.safe_title = self.remove_forbidden_characters(self.title)
+        self.safe_title = make_alphanumeric(self.title)
         self.description = '\n'.join([
             p.text for p in webdriver.find_element(By.XPATH, '//div[@class="text-break-word pb-0"]'
                                                    ).find_elements(By.TAG_NAME, 'p')
@@ -173,13 +175,6 @@ class Exercise:
             self._fetch_remote(webdriver, from_location)
         else:
             self._fetch_local(from_location)
-
-    @staticmethod
-    def remove_forbidden_characters(from_string: str, forbidden_characters: str = '"*<>?/\\|:') -> str:
-        for character in forbidden_characters:
-            from_string = from_string.replace(character, '')
-
-        return from_string
 
     def save(self, session: Session, override: bool = True, to_location: str = config['path']['exercise']) -> bool:
         """creates a directory in which the exercises content, attachments and data are saved in (in subdirectories)"""
@@ -233,7 +228,7 @@ class Exercise:
             session.fetch_downloadable(
                 from_remote_location=remote_attachment_location,
                 to_location=f'{attachment_directory}/'
-                            f'{self.remove_forbidden_characters(remote_attachment_location.split("/")[-1])}'
+                            f'{make_alphanumeric(remote_attachment_location.split("/")[-1])}'
             )
 
         return True

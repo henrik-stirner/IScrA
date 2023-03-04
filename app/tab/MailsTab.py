@@ -183,12 +183,13 @@ class MailsTab(QScrollArea):
 
         # there are unread mails, add the new widgets
         i = 0
-        for from_user, subject, body in self._mail_receiver.extract_mail_content_by_id(selection, mail_ids):
+        for date, subject, from_sender, to_receiver, body in self._mail_receiver.extract_mail_content_by_id(
+                selection, mail_ids):
             # widget with vertical layout containing labels with mail specific data
             mail_subject_label = QLabel(subject)
             mail_subject_label.setStyleSheet('QLabel { font-weight: bold }')
 
-            mail_from_user_label = QLabel(from_user)
+            mail_from_user_label = QLabel(from_sender)
             mail_from_user_label.setStyleSheet('QLabel { color: darkgrey }')
 
             mail_data_layout = QVBoxLayout()

@@ -3,7 +3,7 @@ from configparser import ConfigParser
 
 import re
 
-from email.header import decode_header
+from email.header import make_header, decode_header
 from email import message_from_bytes
 import imaplib
 
@@ -108,45 +108,70 @@ class Receiver:
         # therefore, turn the ids into string
         return selection, [str(mail_id) for mail_id in range(number_of_mails, number_of_mails - max_amount, -1)]
 
-    def extract_mail_content_by_id(self, selection: str, mail_ids: list) -> (str, str, str):
+    @staticmethod
+    def _obtain_message_header_contents(message) -> tuple[str, str, str, str]:
+        # date
+        date = str(make_header(decode_header(message['date'])))
+        # subject
+        subject = str(make_header(decode_header(message['subject'])))
+        # sender
+        from_sender = str(make_header(decode_header(message['from'])))
+        # receiver
+        to_receiver = str(make_header(decode_header(message['to'])))
+
+        return date, subject, from_sender, to_receiver
+
+    @staticmethod
+    def _obtain_message_body_contents(message) -> str:
+        if not message.is_multipart():
+            if not message.get_content_type() in ['text/plain', 'text/html']:
+                # there is no text for us to extract
+                return ''
+
+            return message.get_payload(decode=True).decode().strip()
+
+        # the message is a multipart and the text parts need to be separated from the rest
+        assert message.is_multipart()
+
+        body = ''
+
+        # get all text parts of the message's payload
+        for part in message.get_payload():
+
+            content_type = part.get_content_type()
+            content_disposition = str(part.get('Content-Disposition'))
+
+            if 'attachment' in content_disposition and part.get_filename():
+                # TODO: handle attachments
+                # attachment_filename := part.get_filename()
+                # open(path, 'wb').write(part.get_payload(decode=True))
+                pass
+
+            elif content_type in ['text/plain', 'text/html']:
+                body += part.get_payload(decode=True).decode()
+
+        return body
+
+    def extract_mail_content_by_id(self, selection: str, mail_ids: list) -> tuple[str, str, str] | None:
         """generator; gets information about and content of a mail by its id"""
         self._imap_connection.select(selection, readonly=True)
 
         for mail_id in mail_ids:
-            from_user, subject, body = '', '', ''
-
             status, response = self._imap_connection.fetch(mail_id, '(RFC822)')
 
-            # data: a list with a tuple with header, content, and the closing byte b')'
-            for chunk in response:
-                if not isinstance(chunk, tuple):
-                    continue
+            if status.lower() != 'ok':
+                return
 
-                # skip the header
-                message = message_from_bytes(chunk[1])
+            # response: [(header, content), closing byte]
+            # we only want the tuple
+            # skip the header in the tuple as well
+            message = message_from_bytes(response[0][1])
 
-                # decode subject
-                subject, encoding = decode_header(message['subject'])[0]
-                if isinstance(subject, bytes):
-                    subject = subject.decode(encoding if encoding else 'utf-8').strip()
+            # extract message contents
+            date, subject, from_sender, to_receiver = self._obtain_message_header_contents(message=message)
+            body = self._obtain_message_body_contents(message=message)
 
-                # decode sender
-                from_user, encoding = decode_header(message.get('from', '<unknown>'))[0]
-                if isinstance(from_user, bytes):
-                    # TODO: failing to successfully decode special characters and symbols
-                    from_user = from_user.decode(encoding if encoding else 'utf-8').strip()
-
-                # if the message is a multipart, the text needs to be separated
-                if message.is_multipart():
-                    # get all text parts of the message payload
-                    for part in message.get_payload():
-                        if part.get_content_type() == 'text/plain':
-                            body += part.get_payload(decode=True).decode()
-                else:
-                    if message.get_content_type() in ['text/plain', 'text/html']:
-                        body = message.get_payload(decode=True).decode().strip()
-
-            yield from_user, subject, body
+            yield date, subject, from_sender, to_receiver, body
 
         # close selection when done extracting content from mails
         self._imap_connection.close()

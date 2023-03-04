@@ -9,6 +9,8 @@ from os import path, mkdir, makedirs
 from shutil import rmtree
 import json
 
+from webdriver.element.util import make_alphanumeric
+
 from webdriver import Session
 
 
@@ -124,15 +126,15 @@ class File:
                     'download': remote_location
                 }
 
-        self.safe_relative_remote_location = self.remove_forbidden_characters(
-            self.relative_remote_location, forbidden_characters='\"*<>?\\|')
+        self.safe_relative_remote_location = ''.join(
+            char if char not in '\"*<>?\\|' else '_' for char in self.relative_remote_location)
 
     def _fetch_remote(self, webdriver: WebDriver, remote_location: str) -> None:
         """fetches the data of a file from the corresponding IServ page"""
         self._remote_locations_from_single_remote_location(remote_location)
 
         self.name = self.relative_remote_location.split('/')[-1]
-        self.safe_name = self.remove_forbidden_characters(self.name)
+        self.safe_name = make_alphanumeric(self.name)
 
         self.type = f'.{self.name.split(".")[-1]}'
 
@@ -159,13 +161,6 @@ class File:
             self._fetch_remote(webdriver, from_location)
         else:
             self._fetch_local(from_location)
-
-    @staticmethod
-    def remove_forbidden_characters(from_string: str, forbidden_characters: str = '"*<>?/\\|:') -> str:
-        for character in forbidden_characters:
-            from_string = from_string.replace(character, '')
-
-        return from_string
 
     def save(self, session: Session, override: bool = True, to_location: str = config['path']['filesystem']) -> bool:
         """creates a directory in which the files content and data are saved in"""

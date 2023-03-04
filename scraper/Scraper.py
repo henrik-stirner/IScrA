@@ -5,7 +5,6 @@ from datetime import datetime
 from os import walk, remove, path
 
 from requests import Session
-from requests.auth import HTTPBasicAuth
 from requests.exceptions import RequestException
 from bs4 import BeautifulSoup
 
@@ -68,6 +67,8 @@ class Scraper:
             # login failed (German text)
             logger.exception('Failed trying to log into IServ. The username or password is invalid.')
             raise ValueError('The username or password is invalid.')
+
+        # TODO: set language to German
 
         return True
 
