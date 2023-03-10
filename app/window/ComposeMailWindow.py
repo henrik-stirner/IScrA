@@ -105,7 +105,7 @@ class ComposeMailWindow(QScrollArea):
         self.body_input.setAcceptRichText(False)
         self.body_input.setPlaceholderText('Dear John, \n'
                                            'I wanted to ask you if...')
-        self.body_input.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
+        self.body_input.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         # send button
         self.send_mail_button = QPushButton('Send')

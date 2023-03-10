@@ -1,6 +1,6 @@
 import logging
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QObject, QThreadPool, QRunnable, pyqtSignal, pyqtSlot
 from PyQt6.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QWidget, QScrollArea, QLabel, QPushButton, QLineEdit, QSizePolicy
 )
@@ -19,6 +19,38 @@ import webdriver
 
 
 logger = logging.getLogger(__name__)
+
+
+# ----------
+# Exercise Loader
+# ----------
+
+class ExerciseLoaderSignals(QObject):
+    exercise_loaded = pyqtSignal(webdriver.element.Exercise)
+    finished = pyqtSignal()
+
+
+class ExerciseLoader(QRunnable):
+    def __init__(self, webdriver_session: webdriver.Session) -> None:
+        super().__init__()
+
+        self.signals = ExerciseLoaderSignals()
+
+        self._webdriver_session = webdriver_session
+
+    def run(self) -> None:
+        try:
+            exercise_generator = self._webdriver_session.fetch_all_exercises()
+
+            for exercise in exercise_generator:
+                if not exercise:
+                    continue
+
+                self.signals.exercise_loaded.emit(exercise)
+        except Exception as exception:
+            logger.exception(exception)
+
+        self.signals.finished.emit()
 
 
 # ----------
@@ -91,81 +123,99 @@ class ExercisesTab(QScrollArea):
 
     def display_exercise(self, exercise: webdriver.element.Exercise) -> None:
         if not self.display_exercise_window:
-            self.display_exercise_window = DisplayExerciseWindow(self._parent.get_webdriver_session())
+            # the webdriver session can not not exist at this point, because it was used to load this exercise
+            self.display_exercise_window = DisplayExerciseWindow(self._parent.get_webdriver_session()[0])
 
         self.display_exercise_window.display_exercise(exercise)
         self.display_exercise_window.show()
 
-    def load_exercises(self) -> None:
-        # load exercise button
-        self.load_exercises_button.setText('Loading exercises...')
-        self.load_exercises_button.setDisabled(True)
+    @pyqtSlot()
+    def toggle_load_exercises_button_loading_state(self) -> None:
+        if self.load_exercises_button.text() in ['Load exercises', 'Reload exercises']:
+            self.load_exercises_button.setText('Loading exercises...')
+        else:
+            self.load_exercises_button.setText('Reload exercises')
 
-        # remove all widgets from the layout
-        util.clear_layout(self.exercises_tab_exercises_layout)
+    @pyqtSlot(webdriver.element.Exercise)
+    def append_loaded_exercise_to_layout(self, exercise: webdriver.element.Exercise) -> None:
+        exercises_title_label = QLabel(exercise.title)
 
-        exercises = []
-        try:
-            exercises = self._parent.get_webdriver_session().fetch_all_exercises()
-        except Exception as exception:
-            logger.exception(exception)
+        if exercise.unseen:
+            exercises_title_label.setStyleSheet('QLabel { color: red; font-weight: bold }')
+        elif exercise.completed:
+            exercises_title_label.setStyleSheet('QLabel { color: green; font-weight: bold }')
+        else:
+            exercises_title_label.setStyleSheet('QLabel { font-weight: bold }')
 
-        if not exercises:
-            self.exercises_tab_exercises_layout.addWidget(QLabel(
-                'Currently, there are no exercises pending for you.'
-            ))
+        exercise_owner_label = QLabel(exercise.owner)
+        exercise_owner_label.setStyleSheet('QLabel { color: grey; }')
 
-        for exercise in exercises:
-            exercises_title_label = QLabel(exercise.title)
+        exercise_data_layout = QVBoxLayout()
+        exercise_data_layout.addWidget(exercises_title_label)
+        exercise_data_layout.addWidget(exercise_owner_label)
 
-            if exercise.unseen:
-                exercises_title_label.setStyleSheet('QLabel { color: red; font-weight: bold }')
-            elif exercise.completed:
-                exercises_title_label.setStyleSheet('QLabel { color: green; font-weight: bold }')
-            else:
-                exercises_title_label.setStyleSheet('QLabel { font-weight: bold }')
+        exercise_data_widget = QWidget()
+        exercise_data_widget.setLayout(exercise_data_layout)
 
-            exercise_owner_label = QLabel(exercise.owner)
-            exercise_owner_label.setStyleSheet('QLabel { color: grey; }')
-
-            exercise_data_layout = QVBoxLayout()
-            exercise_data_layout.addWidget(exercises_title_label)
-            exercise_data_layout.addWidget(exercise_owner_label)
-
-            exercise_data_widget = QWidget()
-            exercise_data_widget.setLayout(exercise_data_layout)
-
-            display_exercise_button = QPushButton('Display')
-            display_exercise_button.clicked.connect(
-                lambda state, display_exercise=exercise: self.display_exercise(
-                    display_exercise
-                )
+        display_exercise_button = QPushButton('Display')
+        display_exercise_button.clicked.connect(
+            lambda state, display_exercise=exercise: self.display_exercise(
+                display_exercise
             )
-            display_exercise_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        )
+        display_exercise_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
-            exercise_exercise_layout = QHBoxLayout()
-            exercise_exercise_layout.addWidget(exercise_data_widget)
-            exercise_exercise_layout.addWidget(display_exercise_button)
+        exercise_exercise_layout = QHBoxLayout()
+        exercise_exercise_layout.addWidget(exercise_data_widget)
+        exercise_exercise_layout.addWidget(display_exercise_button)
 
-            exercise_exercise_widget = QWidget()
-            exercise_exercise_widget.setSizePolicy(
-                QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
-            exercise_exercise_widget.setLayout(exercise_exercise_layout)
+        exercise_exercise_widget = QWidget()
+        exercise_exercise_widget.setSizePolicy(
+            QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+        exercise_exercise_widget.setLayout(exercise_exercise_layout)
 
-            exercise_main_layout = QVBoxLayout()
-            exercise_main_layout.addWidget(QHSeparationLine(line_width=1))
-            exercise_main_layout.addWidget(exercise_exercise_widget)
-            exercise_main_layout.addWidget(QHSeparationLine(line_width=1))
+        exercise_main_layout = QVBoxLayout()
+        exercise_main_layout.addWidget(QHSeparationLine(line_width=1))
+        exercise_main_layout.addWidget(exercise_exercise_widget)
+        exercise_main_layout.addWidget(QHSeparationLine(line_width=1))
 
-            exercise_main_widget = QWidget()
-            exercise_main_widget.setLayout(exercise_main_layout)
+        exercise_main_widget = QWidget()
+        exercise_main_widget.setLayout(exercise_main_layout)
 
-            self.exercises_tab_exercises_layout.addWidget(exercise_main_widget)
+        self.exercises_tab_exercises_layout.addWidget(exercise_main_widget)
 
-        # load exercise button
-        self.load_exercises_button.setText('Reload exercises')
-        self.load_exercises_button.setDisabled(False)
+    @pyqtSlot()
+    def load_exercises(self, skip_to_loading: bool = False) -> None:
+        # disable stuff that could interfere with the webdriver
+        if not skip_to_loading:
+            self._parent.exercises_tab.exercises_tab_widget.setEnabled(False)
+            self._parent.texts_tab.texts_tab_widget.setEnabled(False)
+            self.toggle_load_exercises_button_loading_state()  # load exercise button
 
+            util.clear_layout(self.exercises_tab_exercises_layout)
+
+        # get webdriver session
+        webdriver_session, on_webdriver_launch = self._parent.get_webdriver_session()
+        if not webdriver_session:
+            on_webdriver_launch.connect(lambda launched_webdriver_session: self.load_exercises(skip_to_loading=True))
+            return
+
+        # load data
+        exercise_loader = ExerciseLoader(
+            webdriver_session
+        )
+        exercise_loader.signals.exercise_loaded.connect(self.append_loaded_exercise_to_layout)
+
+        # load exercises button
+        exercise_loader.signals.finished.connect(self.toggle_load_exercises_button_loading_state)
+
+        exercise_loader.signals.finished.connect(lambda: self._parent.exercises_tab.exercises_tab_widget.setEnabled(
+            True))
+        exercise_loader.signals.finished.connect(lambda: self._parent.texts_tab.texts_tab_widget.setEnabled(True))
+
+        QThreadPool.globalInstance().start(exercise_loader)
+
+    @pyqtSlot()
     def filter_exercises(self):
         prompt = self.filter_exercises_entry.text().lower()
 

@@ -108,23 +108,29 @@ def mail_command_function(arguments: argparse.Namespace) -> str:
                             timeout=3,)
 
         i = 1
-        for date, subject, from_sender, to_receiver, body in my_receiver.extract_mail_content_by_id(
-                selection, mail_ids):
+        for mail_id in mail_ids:
+            date, subject, from_sender, to_receiver, body, attachment_data = my_receiver.fetch_mail_content_by_id(
+                selection, mail_id)
             # "extract_text_by_mail_id()" is a generator
             # it is not a good idea to download all the unread mails at once and load the into memory
 
             # log unread mails because I do not want to save them anywhere
             data = f"""
-            ====================
-            Date: {date}
-            ----------
-            Subject: {subject}
-            From: {from_sender}
-            To: {to_receiver}
-            ----------
-            {body}
-            ====================
-            """
+====================
+Date: {date}
+----------
+Subject: {subject}
+From: {from_sender}
+To: {to_receiver}
+----------
+{body[0]}
+----------
+Attachments: 
+{', '.join([
+    f'{attachment[0]} ({attachment[1]})' for attachment in attachment_data
+]) if attachment_data else 'None'}
+====================
+"""
 
             print(f'\n\n({i})\n{data}')
 

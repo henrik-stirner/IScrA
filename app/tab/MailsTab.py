@@ -1,6 +1,6 @@
 import logging
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QObject, QThreadPool, QRunnable, pyqtSignal, pyqtSlot
 from PyQt6.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QWidget, QScrollArea, QLabel, QPushButton, QLineEdit, QSizePolicy, QComboBox, QCheckBox,
     QSpinBox
@@ -25,6 +25,60 @@ logger = logging.getLogger(__name__)
 
 
 # ----------
+# Mail Loader
+# ----------
+
+
+class MailLoaderSignals(QObject):
+    mail_loaded = pyqtSignal(str, str, str, str)
+    finished = pyqtSignal()
+
+
+class MailLoader(QRunnable):
+    def __init__(self, mail_receiver: mail.Receiver, selection: str, unread_only: bool, maximum_mail_amount: int
+                 ) -> None:
+        super().__init__()
+
+        self.signals = MailLoaderSignals()
+
+        self._mail_receiver = mail_receiver
+        self._selection = selection
+        self._unread_only = unread_only
+        self._maximum_mail_amount = maximum_mail_amount
+
+    def run(self) -> None:
+        if self._unread_only:
+            selection, mail_ids = self._mail_receiver.get_ids_of_unread_mails(
+                selection=self._selection,
+                max_amount=self._maximum_mail_amount
+            )
+        else:
+            selection, mail_ids = self._mail_receiver.get_ids_of_mails(
+                selection=self._selection,
+                max_amount=self._maximum_mail_amount
+            )
+
+        # if there are no mails to display
+        if not mail_ids:
+            return
+
+        # there are unread mails, add the new widgets
+        for mail_id in mail_ids:
+            subject, from_sender = self._mail_receiver.minimal_mail_data_by_id(
+                selection=self._selection, mail_id=mail_id
+            )
+
+            self.signals.mail_loaded.emit(
+                self._selection,
+                mail_id,
+                subject,
+                from_sender
+            )
+
+        self.signals.finished.emit()
+
+
+# ----------
 # MailsTab
 # ----------
 
@@ -39,7 +93,7 @@ class MailsTab(QScrollArea):
         self._iserv_username = iserv_username
         self._iserv_password = iserv_password
 
-        self._mail_receiver = None
+        # this is not too expensive, so it can be executed by the Main Thread without the window freezing
         self._mail_receiver = mail.Receiver(self._iserv_username, self._iserv_password)
         self._mail_transmitter = None
 
@@ -147,94 +201,89 @@ class MailsTab(QScrollArea):
         # immediately load the mails because it is quick and handy
         self.load_mails()
 
-    def display_mail(self, selection: str, mail_id: int) -> None:
+    def display_mail(self, selection: str, mail_id: int | str) -> None:
         if not self.display_mail_window:
             self.display_mail_window = DisplayMailWindow(self._mail_receiver)
 
         self.display_mail_window.display_mail(selection, mail_id)
         self.display_mail_window.show()
 
-    def load_mails(self) -> None:
-        # load mails button
-        self.load_mails_button.setText('Loading mails...')
-        self.load_mails_button.setDisabled(True)
+    @pyqtSlot()
+    def toggle_load_mails_button_loading_state(self) -> None:
+        if self.load_mails_button.isEnabled():
+            self.load_mails_button.setText('Loading mails...')
+            self.load_mails_button.setEnabled(False)
+        else:
+            self.load_mails_button.setText('Reload mails')
+            self.load_mails_button.setEnabled(True)
 
-        # remove all widgets from the layout
+    @pyqtSlot(str, str, str, str)
+    def append_loaded_mail_to_layout(self, selection: str, mail_id: int | str, subject: str, from_sender: str) -> None:
+        # widget with vertical layout containing labels with mail specific data
+        mail_subject_label = QLabel(subject)
+        mail_subject_label.setStyleSheet('QLabel { font-weight: bold }')
+
+        mail_from_user_label = QLabel(from_sender)
+        mail_from_user_label.setStyleSheet('QLabel { color: darkgrey }')
+
+        mail_data_layout = QVBoxLayout()
+        mail_data_layout.addWidget(mail_subject_label)
+        mail_data_layout.addWidget(mail_from_user_label)
+
+        mail_data_widget = QWidget()
+        mail_data_widget.setLayout(mail_data_layout)
+
+        # widget with horizontal layout containing the mail data widget and a button for displaying the mail
+        display_mail_button = QPushButton('Display')
+        display_mail_button.clicked.connect(
+            lambda state, display_mail_selection=selection, display_mail_id=mail_id: self.display_mail(
+                display_mail_selection,
+                display_mail_id
+            )
+        )
+        display_mail_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        mail_mail_layout = QHBoxLayout()
+        mail_mail_layout.addWidget(mail_data_widget)
+        mail_mail_layout.addWidget(display_mail_button)
+
+        mail_mail_widget = QWidget()
+        mail_mail_widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+        mail_mail_widget.setLayout(mail_mail_layout)
+
+        mail_main_layout = QVBoxLayout()
+        mail_main_layout.addWidget(QHSeparationLine(line_width=1))
+        mail_main_layout.addWidget(mail_mail_widget)
+        mail_main_layout.addWidget(QHSeparationLine(line_width=1))
+
+        mail_main_widget = QWidget()
+        mail_main_widget.setLayout(mail_main_layout)
+
+        self.mails_tab_mails_layout.addWidget(mail_main_widget)
+
+    def load_mails(self) -> None:
+        self.toggle_load_mails_button_loading_state()  # load mails button
+        self.filter_mails_widget.setEnabled(False)
         util.clear_layout(self.mails_tab_mails_layout)
 
-        maximum_mail_amount = self.max_amount_spin_box.value() if self.max_amount_check_box.isChecked() else None
+        # load data
+        mail_loader = MailLoader(
+            self._mail_receiver,
+            self.mail_selection_combo_box.currentText(),
+            self.unread_only_check_box.isChecked(),
+            self.max_amount_spin_box.value() if self.max_amount_check_box.isChecked() else None
+        )
+        mail_loader.signals.mail_loaded.connect(self.append_loaded_mail_to_layout)
+        # pressing a display mail button would crash the receiver
+        mail_loader.signals.mail_loaded.connect(lambda: self.mails_tab_mails_widget.setEnabled(False))
 
-        if self.unread_only_check_box.isChecked():
-            selection, mail_ids = self._mail_receiver.get_ids_of_unread_mails(
-                selection=self.mail_selection_combo_box.currentText(),
-                max_amount=maximum_mail_amount
-            )
-        else:
-            selection, mail_ids = self._mail_receiver.get_ids_of_mails(
-                selection=self.mail_selection_combo_box.currentText(),
-                max_amount=maximum_mail_amount
-            )
+        mail_loader.signals.finished.connect(self.toggle_load_mails_button_loading_state)  # load mails button
+        mail_loader.signals.finished.connect(lambda: self.mails_tab_mails_widget.setEnabled(True))
+        mail_loader.signals.finished.connect(lambda: self.filter_mails_widget.setEnabled(True))
 
-        if not mail_ids:
-            self.mails_tab_mails_layout.addWidget(QLabel(
-                f'Currently, there are no {"unread " if self.unread_only_check_box.isChecked() else ""}'
-                f'mails in the selected mailbox.'
-            ))
+        QThreadPool.globalInstance().start(mail_loader)
 
-        # there are unread mails, add the new widgets
-        i = 0
-        for date, subject, from_sender, to_receiver, body in self._mail_receiver.extract_mail_content_by_id(
-                selection, mail_ids):
-            # widget with vertical layout containing labels with mail specific data
-            mail_subject_label = QLabel(subject)
-            mail_subject_label.setStyleSheet('QLabel { font-weight: bold }')
-
-            mail_from_user_label = QLabel(from_sender)
-            mail_from_user_label.setStyleSheet('QLabel { color: darkgrey }')
-
-            mail_data_layout = QVBoxLayout()
-            mail_data_layout.addWidget(mail_subject_label)
-            mail_data_layout.addWidget(mail_from_user_label)
-
-            mail_data_widget = QWidget()
-            mail_data_widget.setLayout(mail_data_layout)
-
-            # widget with horizontal layout containing the mail data widget and a button for displaying the mail
-            display_mail_button = QPushButton('Display')
-            display_mail_button.clicked.connect(
-                lambda state, display_mail_selection=selection, display_mail_id=mail_ids[i]: self.display_mail(
-                    display_mail_selection,
-                    display_mail_id
-                )
-            )
-            display_mail_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-
-            mail_mail_layout = QHBoxLayout()
-            mail_mail_layout.addWidget(mail_data_widget)
-            mail_mail_layout.addWidget(display_mail_button)
-
-            mail_mail_widget = QWidget()
-            mail_mail_widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
-            mail_mail_widget.setLayout(mail_mail_layout)
-
-            mail_main_layout = QVBoxLayout()
-            mail_main_layout.addWidget(QHSeparationLine(line_width=1))
-            mail_main_layout.addWidget(mail_mail_widget)
-            mail_main_layout.addWidget(QHSeparationLine(line_width=1))
-
-            mail_main_widget = QWidget()
-            mail_main_widget.setLayout(mail_main_layout)
-
-            self.mails_tab_mails_layout.addWidget(mail_main_widget)
-
-            # for accessing the right mail id
-            i += 1
-
-        # load mails button
-        self.load_mails_button.setText('Reload mails')
-        self.load_mails_button.setDisabled(False)
-
-    def compose_mail(self):
+    def compose_mail(self) -> None:
         if not self.compose_mail_window:
             if not self._mail_transmitter:
                 # create mail receiver if not exists
@@ -245,14 +294,14 @@ class MailsTab(QScrollArea):
         self.compose_mail_window.empty_inputs()
         self.compose_mail_window.show()
 
-    def edit_mail_schedule(self):
+    def edit_mail_schedule(self) -> None:
         if not self.edit_mail_schedule_window:
             self.edit_mail_schedule_window = MailScheduleWindow()
 
         self.edit_mail_schedule_window.load_mail_schedule()
         self.edit_mail_schedule_window.show()
 
-    def filter_mails(self):
+    def filter_mails(self) -> None:
         prompt = self.filter_mails_entry.text().lower()
 
         for i in range(self.mails_tab_mails_layout.count()):

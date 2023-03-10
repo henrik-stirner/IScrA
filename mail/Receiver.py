@@ -81,15 +81,13 @@ class Receiver:
         # close selection
         self._imap_connection.close()
 
-        number_of_mails = len(mail_ids)
-
         if max_amount is None:
             # setting the max amount to the number of mails means that all mails will be returned
-            max_amount = number_of_mails
+            max_amount = len(mail_ids)
 
         # the fetch function of imaplib accepts only strings as message_sets (mail ids)
         # therefore, turn the ids into string
-        return selection, [str(mail_id) for mail_id in range(number_of_mails, number_of_mails - max_amount, -1)]
+        return selection, mail_ids[0:max_amount]
 
     def get_ids_of_mails(self, selection: str = 'INBOX', max_amount=None) -> (str, [str] or []):
         """checks the inbox for unread mails and returns a list of their ids"""
@@ -106,10 +104,54 @@ class Receiver:
 
         # the fetch function of imaplib accepts only strings as message_sets (mail ids)
         # therefore, turn the ids into string
-        return selection, [str(mail_id) for mail_id in range(number_of_mails, number_of_mails - max_amount, -1)]
+        return selection, [str(mail_id) for mail_id in range(number_of_mails, (number_of_mails - max_amount), -1)]
 
-    @staticmethod
-    def _obtain_message_header_contents(message) -> tuple[str, str, str, str]:
+    def minimal_mail_data_by_id(self, selection: str, mail_id: int | str) -> tuple[str, str] | None:
+        """gets subject and sender of a mail"""
+        self._imap_connection.select(selection, readonly=True)
+
+        status, response = self._imap_connection.fetch(str(mail_id), '(RFC822.HEADER)')  # fetch only the header
+
+        if status.lower() != 'ok':
+            logger.exception(f'Failed to fetch mail with id: {mail_id}.')
+            return
+
+        # response: [(header, content), closing byte]
+        # we only want the tuple
+        # skip the header in the tuple as well
+        message = message_from_bytes(response[0][1])
+
+        # extract message contents
+        # subject
+        subject = str(make_header(decode_header(message['subject'])))
+        # sender
+        from_sender = str(make_header(decode_header(message['from'])))
+
+        return subject, from_sender
+
+    def fetch_mail_content_by_id(
+            self, selection: str, mail_id: int | str
+    ) -> tuple[str, str, str, str, tuple[str, str], list[tuple[str, str]]] | None:
+        """gets information about and text content of a mail by its id"""
+        self._imap_connection.select(selection, readonly=True)
+
+        status, response = self._imap_connection.fetch(str(mail_id), '(RFC822)')  # fetch the whole mail
+
+        if status.lower() != 'ok':
+            logger.exception(f'Failed to fetch mail with id: {mail_id}.')
+            return
+
+        # response: [(header, content), closing byte]
+        # we only want the tuple
+        # skip the header in the tuple as well
+        message = message_from_bytes(response[0][1])
+
+        # extract message contents
+
+        # ----------
+        # header
+        # ----------
+
         # date
         date = str(make_header(decode_header(message['date'])))
         # subject
@@ -119,59 +161,86 @@ class Receiver:
         # receiver
         to_receiver = str(make_header(decode_header(message['to'])))
 
-        return date, subject, from_sender, to_receiver
+        # ----------
+        # content
+        # ----------
 
-    @staticmethod
-    def _obtain_message_body_contents(message) -> str:
+        body = ('', '')
+
+        attachment_data = []
+
         if not message.is_multipart():
-            if not message.get_content_type() in ['text/plain', 'text/html']:
+            if content_type := message.get_content_type() == 'text/plain':
+                # there is only text for us to extract
+                body = (message.get_payload(decode=True).decode().strip(), '')
+            elif content_type == 'text/html':
+                body = ('', message.get_payload(decode=True).decode().strip())
+            else:
                 # there is no text for us to extract
-                return ''
+                attachment_data.append((message.get_filename(), content_type))
 
-            return message.get_payload(decode=True).decode().strip()
+        else:
+            body_plaintext = ''
+            body_html = ''
 
-        # the message is a multipart and the text parts need to be separated from the rest
-        assert message.is_multipart()
+            # the message is a multipart and the text parts need to be separated from the rest
+            for part in message.walk():
 
-        body = ''
+                content_type = part.get_content_type()
+                content_disposition = str(part.get('Content-Disposition'))
 
-        # get all text parts of the message's payload
-        for part in message.get_payload():
+                if ('attachment' in content_disposition) and (attachment_file_name := part.get_filename()):
+                    attachment_data.append((attachment_file_name, content_type))
 
-            content_type = part.get_content_type()
-            content_disposition = str(part.get('Content-Disposition'))
+                elif content_type == 'text/plain':
+                    body_plaintext += part.get_payload(decode=True).decode()
+                elif content_type == 'text/html':
+                    body_html += part.get_payload(decode=True).decode()
 
-            if 'attachment' in content_disposition and part.get_filename():
-                # TODO: handle attachments
-                # attachment_filename := part.get_filename()
-                # open(path, 'wb').write(part.get_payload(decode=True))
-                pass
-
-            elif content_type in ['text/plain', 'text/html']:
-                body += part.get_payload(decode=True).decode()
-
-        return body
-
-    def extract_mail_content_by_id(self, selection: str, mail_ids: list) -> tuple[str, str, str] | None:
-        """generator; gets information about and content of a mail by its id"""
-        self._imap_connection.select(selection, readonly=True)
-
-        for mail_id in mail_ids:
-            status, response = self._imap_connection.fetch(mail_id, '(RFC822)')
-
-            if status.lower() != 'ok':
-                return
-
-            # response: [(header, content), closing byte]
-            # we only want the tuple
-            # skip the header in the tuple as well
-            message = message_from_bytes(response[0][1])
-
-            # extract message contents
-            date, subject, from_sender, to_receiver = self._obtain_message_header_contents(message=message)
-            body = self._obtain_message_body_contents(message=message)
-
-            yield date, subject, from_sender, to_receiver, body
+            body = (body_plaintext, body_html)
 
         # close selection when done extracting content from mails
         self._imap_connection.close()
+
+        return date, subject, from_sender, to_receiver, body, attachment_data
+
+    def download_mail_attachments_by_id(self, selection: str, mail_id: int | str, to_location: str) -> bool:
+        """generator; gets information about and text content of a mail by its id"""
+        to_location = to_location.removesuffix('/').removesuffix('\\')
+
+        self._imap_connection.select(selection, readonly=True)
+
+        status, response = self._imap_connection.fetch(str(mail_id), '(RFC822)')  # fetch the whole mail
+
+        if status.lower() != 'ok':
+            logger.exception(f'Failed to fetch mail with id: {mail_id}.')
+            return False
+
+        # response: [(header, content), closing byte]
+        # we only want the tuple
+        # skip the header in the tuple as well
+        message = message_from_bytes(response[0][1])
+
+        # download attachments
+        if not message.is_multipart():
+            if message.get_content_type() not in ['text/plain', 'text/html']:
+                # there is an attachment for us to download
+                open(f'{to_location}/{message.get_filename()}', 'wb').write(message.get_payload(decode=True))
+
+        # the message is a multipart
+        for part in message.walk():
+
+            if not ('attachment' in str(part.get('Content-Disposition')) and part.get_filename()):
+                continue
+
+            # there is an attachment for us to download
+            open(f'{to_location}/{part.get_filename()}', 'wb').write(part.get_payload(decode=True))
+
+        # close selection when done extracting content from mails
+        self._imap_connection.close()
+
+        return True
+
+    # TODO: BODYSTRUCTURE
+    # fetch and analyse BODYSTRUCTURE and only download what is really needed:
+    # status, response = self._imap_connection.fetch(str(mail_id), '(BODYSTRUCTURE)')  # get the mails body structure

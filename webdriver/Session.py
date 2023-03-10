@@ -231,33 +231,49 @@ class Session:
     # now it actually gets interesting (for real) (I swear)
 
     # exercises
-    def fetch_all_exercises(self) -> list:
+    def fetch_all_exercises(self) -> Exercise | None:
         """returns a list of all exercises (webdriver.element.Exercise.Exercise) in this session's ExerciseModule"""
         self.exercise_module()
 
-        return [Exercise(
-            from_location=remote_location,
-            webdriver=self._webdriver,
-            timeout=self._timeout
-        ) for remote_location in self._exercise_module.remote_exercise_locations.values()]
+        for remote_location in self._exercise_module.remote_exercise_locations.values():
+            try:
+                yield Exercise(
+                    from_location=remote_location,
+                    webdriver=self._webdriver,
+                    timeout=self._timeout
+                )
+            except Exception as exception:
+                logger.exception(exception)
+                yield None
 
-    def fetch_exercises_by_keywords(self, keywords: list) -> list:
+    def fetch_exercises_by_keywords(self, keywords: list) -> Exercise | None:
         """
         returns a list of all texts (webdriver.element.Text.Text) in this session's TextModule
         which have a title that contains at least one of the given keywords
         """
         self.exercise_module()
 
-        return [Exercise(
-            from_location=remote_location,
-            webdriver=self._webdriver,
-            timeout=self._timeout
-        ) for name, remote_location in self._exercise_module.remote_exercise_locations.items() if any(
-            keyword in name for keyword in keywords)]
+        for applicable_remote_location in [
+            remote_location for name, remote_location in self._exercise_module.remote_exercise_locations.items() if any(
+                keyword.lower() in name.lower() for keyword in keywords
+            )
+        ]:
+            try:
+                yield Exercise(
+                    from_location=applicable_remote_location,
+                    webdriver=self._webdriver,
+                    timeout=self._timeout
+                )
+            except Exception as exception:
+                logger.exception(exception)
+                yield None
 
     def save_all_exercises(self, override: bool = True, to_location: str = config['path']['exercise']) -> None:
         """saves all exercises (webdriver.element.Exercise.Exercise) in this session's ExerciseModule"""
         for exercise in self.fetch_all_exercises():
+            if not exercise:
+                continue
+
             exercise.save(session=self, override=override, to_location=to_location)
 
     def save_exercise(self, exercise: Exercise, override: bool = True, to_location: str = config['path']['exercise']
@@ -266,29 +282,42 @@ class Session:
         exercise.save(session=self, override=override, to_location=to_location)
 
     # texts
-    def fetch_all_texts(self) -> list:
+    def fetch_all_texts(self) -> Text | None:
         """returns a list of all texts (webdriver.element.Text.Texts) in this session's TextModule"""
         self.text_module()
 
-        return [Text(
-            from_location=remote_location,
-            webdriver=self._webdriver,
-            timeout=self._timeout
-        ) for remote_location in self._text_module.remote_text_locations.values()]
+        for remote_location in self._text_module.remote_text_locations.values():
+            try:
+                yield Text(
+                    from_location=remote_location,
+                    webdriver=self._webdriver,
+                    timeout=self._timeout
+                )
+            except Exception as exception:
+                logger.exception(exception)
+                yield None
 
-    def fetch_texts_by_keywords(self, keywords: list) -> list:
+    def fetch_texts_by_keywords(self, keywords: list) -> Text | None:
         """
         returns a list of all texts (webdriver.element.Text.Text) in this session's TextModule
         which have a title that contains at least one of the given keywords
         """
         self.text_module()
 
-        return [Text(
-            from_location=remote_location,
-            webdriver=self._webdriver,
-            timeout=self._timeout
-        ) for name, remote_location in self._text_module.remote_text_locations.items() if any(
-            keyword.lower() in name.lower() for keyword in keywords)]
+        for applicable_remote_location in [
+            remote_location for name, remote_location in self._text_module.remote_text_locations.items() if any(
+                keyword.lower() in name.lower() for keyword in keywords
+            )
+        ]:
+            try:
+                yield Text(
+                    from_location=applicable_remote_location,
+                    webdriver=self._webdriver,
+                    timeout=self._timeout
+                )
+            except Exception as exception:
+                logger.exception(exception)
+                yield None
 
     def fetch_text_content(self, text: Text) -> list[WebElement] or list:
         return text.fetch_content(webdriver=self._webdriver)
@@ -296,6 +325,9 @@ class Session:
     def save_all_texts(self, override: bool = True, to_location: str = config['path']['text']) -> None:
         """saves all texts (webdriver.element.Text.Text) in this session's TextModule"""
         for text in self.fetch_all_texts():
+            if not text:
+                continue
+
             text.save(webdriver=self._webdriver, override=override, to_location=to_location)
 
     def save_text(self, text: Text, override: bool = True, to_location: str = config['path']['text']
@@ -307,32 +339,44 @@ class Session:
     # TODO: files
 
     # messenger rooms
-    def get_all_messenger_rooms(self) -> list:
+    def get_all_messenger_rooms(self) -> MessengerRoom | None:
         """
         returns a list of all messenger rooms (webdriver.element.MessengerRoom.MessengerRoom)
         in this session's MessengerModule
         """
         self.messenger_module()
 
-        return [MessengerRoom(
-            remote_location=remote_location,
-            webdriver=self._webdriver,
-            timeout=self._timeout
-        ) for remote_location in self._messenger_module.remote_messenger_room_locations.values()]
+        for remote_location in self._messenger_module.remote_messenger_room_locations.values():
+            try:
+                yield MessengerRoom(
+                    remote_location=remote_location,
+                    webdriver=self._webdriver,
+                    timeout=self._timeout
+                )
+            except Exception as exception:
+                logger.exception(exception)
+                yield None
 
-    def get_messenger_rooms_by_keywords(self, keywords: list) -> list:
+    def get_messenger_rooms_by_keywords(self, keywords: list) -> MessengerRoom | None:
         """
         returns a list of all texts (webdriver.element.Text.Text) in this session's TextModule
         which have a title that contains at least one of the given keywords
         """
         self.messenger_module()
 
-        return [MessengerRoom(
-            remote_location=remote_location,
-            webdriver=self._webdriver,
-            timeout=self._timeout
-        ) for name, remote_location in self._messenger_module.remote_messenger_room_locations.items() if any(
-            keyword in name for keyword in keywords)]
+        for applicable_remote_location in [
+            remote_location for name, remote_location in self._messenger_module.remote_messenger_room_locations.items()
+            if any(keyword.lower() in name.lower() for keyword in keywords)
+        ]:
+            try:
+                yield MessengerRoom(
+                    remote_location=applicable_remote_location,
+                    webdriver=self._webdriver,
+                    timeout=self._timeout
+                )
+            except Exception as exception:
+                logger.exception(exception)
+                yield None
 
     def fetch_messages(self, messenger_room: MessengerRoom, number_of_messages: int) -> list:
         """fetches the last number_of_messages that have been sent in a messenger room"""

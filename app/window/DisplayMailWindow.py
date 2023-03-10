@@ -3,8 +3,9 @@ import logging
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import (
-    QApplication, QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSizePolicy
+    QApplication, QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QFileDialog
 )
+from PyQt6.QtWebEngineWidgets import QWebEngineView
 
 from app.QtExt import util
 from app.QtExt.QSeparationLine import QHSeparationLine
@@ -69,17 +70,19 @@ class DisplayMailWindow(QScrollArea):
 
         self.setWidget(self.main_widget)
 
-    def display_mail(self, selection: str, mail_id: int) -> None:
+    def download_mail_attachments(self, selection: str, mail_id: int | str):
+        save_path = str(QFileDialog.getExistingDirectory(self, 'Select Directory'))
+        self._mail_receiver.download_mail_attachments_by_id(selection=selection, mail_id=mail_id, to_location=save_path)
+
+    def display_mail(self, selection: str, mail_id: int | str) -> None:
         if self.current_mail_id == mail_id:
             return
 
         util.clear_layout(self.main_layout)
 
-        date, subject, from_sender, to_receiver, body = '', '', '', '', ''
-        for date, subject, from_sender, to_receiver, body in self._mail_receiver.extract_mail_content_by_id(
-                selection=selection, mail_ids=[mail_id]):
-            # this for loop is needed, because extract_mail_content_by_id() is a generator
-            pass
+        # get mail data
+        date, subject, from_sender, to_receiver, body, attachment_data = self._mail_receiver.fetch_mail_content_by_id(
+            selection=selection, mail_id=str(mail_id))
 
         self.setWindowTitle(subject)
 
@@ -155,10 +158,24 @@ class DisplayMailWindow(QScrollArea):
         self.main_layout.addWidget(date_widget)
 
         # body
-        body_label = QLabel(body)
+        body_widget = None
+        if body_html := body[1]:
+            # html (preferred)
+            body_widget = QWebEngineView()
+            body_widget.setHtml(body_html)
+        elif body_plaintext := body[0]:
+            # plaintext
+            body_widget = QLabel(body_plaintext)
+            # text should be selectable
+            body_widget.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        else:
+            body_widget = QLabel('This mail does not contain any text parts.')
+            body_widget.setStyleSheet('QLabel { color: lightgrey; font-weight: 100; font-style: italic; }')
+            # text should be selectable
+            body_widget.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
 
         body_layout = QVBoxLayout()
-        body_layout.addWidget(body_label)
+        body_layout.addWidget(body_widget)
 
         body_widget = QWidget()
         body_widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Minimum)
@@ -167,7 +184,30 @@ class DisplayMailWindow(QScrollArea):
         self.main_layout.addWidget(QHSeparationLine(line_width=1))
         self.main_layout.addWidget(body_widget)
 
-        # TODO: attachments
+        # attachment file names
+        if not attachment_data:
+            # if there are no attachment files the following code is unnecessary
+            return
+
+        attachment_data_layout = QVBoxLayout()
+
+        for attachment in attachment_data:
+            attachment_data_layout.addWidget(QLabel(f'{attachment[0]} ({attachment[1]})'))
+
+        attachment_data_widget = QWidget()
+        attachment_data_widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Minimum)
+        attachment_data_widget.setLayout(attachment_data_layout)
+
+        self.main_layout.addWidget(QHSeparationLine(line_width=1))
+        self.main_layout.addWidget(attachment_data_widget)
+
+        # download attachments button
+        download_attachments_button = QPushButton('Download attachments')
+        download_attachments_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        download_attachments_button.clicked.connect(lambda state: self.download_mail_attachments(
+            selection=selection, mail_id=mail_id))
+
+        self.main_layout.addWidget(download_attachments_button)
 
     def shutdown(self) -> None:
         # log out and close connections
