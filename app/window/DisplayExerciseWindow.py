@@ -192,6 +192,8 @@ class DisplayExerciseWindow(QScrollArea):
 
         # description
         description_label = QLabel(str(exercise.description))
+        # text should be selectable
+        description_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
 
         description_layout = QVBoxLayout()
         description_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)

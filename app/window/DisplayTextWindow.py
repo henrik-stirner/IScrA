@@ -198,8 +198,12 @@ class DisplayTextWindow(QScrollArea):
         body_layout = QVBoxLayout()
         body_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
+        body_label = QLabel()
+        # text should be selectable
+        body_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         for ace_line in self._webdriver_session.fetch_text_content(text=text):
-            body_layout.addWidget(QLabel(f'{ace_line.text}\n'))
+            body_label.setText(f'{body_label.text()}\n{ace_line.text}')
+        body_layout.addWidget(body_label)
 
         body_widget = QWidget()
         body_widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Minimum)
