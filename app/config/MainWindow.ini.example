@@ -5,3 +5,12 @@ y = 0
 [size]
 w = 1600
 h = 900
+
+[view]
+full screen = 0
+maximized = 0
+minimized = 0
+
+[settings]
+stylesheet = DarkMode.qss
+

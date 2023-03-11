@@ -148,6 +148,8 @@ def send_and_reschedule_scheduled_mails(iserv_username: str, iserv_password: str
 
 def launch_app(iserv_username: str, iserv_password: str) -> None:
     q_application = QApplication(sys.argv)
+    q_application.setApplicationName('IScrA')
+    q_application.setApplicationDisplayName('IScrA')
 
     q_application_main_window = MainWindow(iserv_username, iserv_password)
     q_application_main_window.show()

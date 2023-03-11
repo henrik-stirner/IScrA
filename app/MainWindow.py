@@ -99,6 +99,13 @@ class MainWindow(QMainWindow):
             int(config['size']['w']),
             int(config['size']['h'])
         )
+        
+        if int(config['view']['full screen']):
+            self.showFullScreen()
+        elif int(config['view']['maximized']):
+            self.showMaximized()
+        elif int(config['view']['minimized']):
+            self.showMinimized()
 
         # ----------
         # actions
@@ -217,16 +224,37 @@ class MainWindow(QMainWindow):
         self.dummy_widget = QWidget()
         self.dummy_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.dummy_widget)
-
-    @pyqtSlot()
-    def show_about_dialogue(self) -> None:
-        about_dialog = AboutDialog(self)
-        about_dialog.exec()
+    
+    def showFullScreen(self) -> None:
+        super().showFullScreen()
+        
+        config['view']['full screen'] = '1'
+        config['view']['maximized'] = '0'
+        config['view']['minimized'] = '0'
+    
+    def showMaximized(self) -> None:
+        super().showMaximized()
+        
+        config['view']['full screen'] = '0'
+        config['view']['maximized'] = '1'
+        config['view']['minimized'] = '0'
+    
+    def showMinimized(self) -> None:
+        super().showMinimized()
+        
+        config['view']['full screen'] = '0'
+        config['view']['maximized'] = '0'
+        config['view']['minimized'] = '1'
 
     @staticmethod
     def _set_stylesheet(stylesheet: str):
         QApplication.instance().setStyleSheet(f'file:///./app/style/{stylesheet}')
         config['settings']['stylesheet'] = stylesheet
+
+    @pyqtSlot()
+    def show_about_dialogue(self) -> None:
+        about_dialog = AboutDialog(self)
+        about_dialog.exec()
 
     @pyqtSlot(webdriver.Session)
     def _set_webdriver_session(self, new_webdriver_session: webdriver.Session) -> None:
@@ -256,10 +284,17 @@ class MainWindow(QMainWindow):
             self._webdriver_session.shutdown()
 
         # write size and position of the window to the config file
-        config['position']['x'] = str(self.x()) if self.x() >= 0 else 0  # to make sure the window appears on screen (:
-        config['position']['y'] = str(self.y()) if self.y() >= 0 else 0  # ^^^
-        config['size']['w'] = str(self.width())
-        config['size']['h'] = str(self.height())
+        screen_resolution = QApplication.instance().primaryScreen().availableGeometry()
+        screen_width, screen_height = screen_resolution.width(), screen_resolution.height()
+
+        config['position']['x'] = str(self.x()) if self.x() >= 0 else '0'  # to make sure the window appears on screen
+        config['position']['y'] = str(self.y()) if self.y() >= 0 else '0'  # ^^^
+        config['size']['w'] = str(self.width()) if self.width() <= screen_width else str(screen_width)
+        config['size']['h'] = str(self.height()) if self.height() <= screen_height else str(screen_height)
+
+        config['view']['full screen'] = '1' if self.isFullScreen() else '0'
+        config['view']['maximized'] = '1' if self.isMaximized() else '0'
+        config['view']['minimized'] = '1' if self.isMinimized() else '0'
 
         with open('./app/config/MainWindow.ini', 'w', encoding='utf-8') as config_file:
             config.write(config_file)
