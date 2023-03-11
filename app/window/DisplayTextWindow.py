@@ -71,9 +71,9 @@ class DisplayTextWindow(QScrollArea):
 
         self.setWidget(self.main_widget)
 
-    def save_text(self, text: webdriver.element.Text):
-        save_path = str(QFileDialog.getExistingDirectory(self, 'Select Location'))
-        self._webdriver_session.save_text(text=text, override=False, to_location=save_path)
+    def save_text(self, text: webdriver.element.Text) -> None:
+        if save_path := QFileDialog.getExistingDirectory(self, 'Select Directory', '/'):
+            self._webdriver_session.save_text(text=text, override=False, to_location=save_path)
 
     def display_text(self, text: webdriver.element.Text) -> None:
         if self.current_text == text:

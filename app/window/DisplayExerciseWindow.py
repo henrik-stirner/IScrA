@@ -72,9 +72,9 @@ class DisplayExerciseWindow(QScrollArea):
 
         self.setWidget(self.main_widget)
 
-    def save_exercise(self, exercise: webdriver.element.Exercise):
-        save_path = str(QFileDialog.getExistingDirectory(self, 'Select Directory'))
-        self._webdriver_session.save_exercise(exercise=exercise, override=False, to_location=save_path)
+    def save_exercise(self, exercise: webdriver.element.Exercise) -> None:
+        if save_path := QFileDialog.getExistingDirectory(self, 'Select Directory', '/'):
+            self._webdriver_session.save_exercise(exercise=exercise, override=False, to_location=save_path)
 
     def display_exercise(self, exercise: webdriver.element.Exercise) -> None:
         if self.current_exercise == exercise:

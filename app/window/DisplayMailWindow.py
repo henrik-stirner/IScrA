@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (
     QApplication, QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QFileDialog
 )
 from PyQt6.QtWebEngineWidgets import QWebEngineView
+from PyQt6.QtWebEngineCore import QWebEngineSettings
 
 from app.QtExt import util
 from app.QtExt.QSeparationLine import QHSeparationLine
@@ -70,9 +71,11 @@ class DisplayMailWindow(QScrollArea):
 
         self.setWidget(self.main_widget)
 
-    def download_mail_attachments(self, selection: str, mail_id: int | str):
-        save_path = str(QFileDialog.getExistingDirectory(self, 'Select Directory'))
-        self._mail_receiver.download_mail_attachments_by_id(selection=selection, mail_id=mail_id, to_location=save_path)
+    def download_mail_attachments(self, selection: str, mail_id: int | str) -> None:
+        if save_path := QFileDialog.getExistingDirectory(self, 'Select Directory', '/'):
+            self._mail_receiver.download_mail_attachments_by_id(
+                selection=selection, mail_id=mail_id, to_location=save_path
+            )
 
     def display_mail(self, selection: str, mail_id: int | str) -> None:
         if self.current_mail_id == mail_id:
@@ -158,10 +161,15 @@ class DisplayMailWindow(QScrollArea):
         self.main_layout.addWidget(date_widget)
 
         # body
-        body_widget = None
         if body_html := body[1]:
             # html (preferred)
             body_widget = QWebEngineView()
+            body_widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
+            body_widget.page().settings().setFontSize(
+                QWebEngineSettings.FontSize.DefaultFontSize, 14)
+            body_widget.page().settings().setFontFamily(
+                QWebEngineSettings.FontFamily.StandardFont, QApplication.font().family())
+            body_widget.page().settings().setAttribute(QWebEngineSettings.WebAttribute.ShowScrollBars, False)
             body_widget.setHtml(body_html)
         elif body_plaintext := body[0]:
             # plaintext
