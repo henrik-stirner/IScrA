@@ -206,7 +206,7 @@ class ComposeMailWindow(QScrollArea):
         pass
 
     def close(self) -> None:
-        super().close()
-
         # log out and close connections
         self.shutdown()
+
+        super().close()

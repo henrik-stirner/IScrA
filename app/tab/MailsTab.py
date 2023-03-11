@@ -323,6 +323,12 @@ class MailsTab(QScrollArea):
         if self.display_mail_window:
             self.display_mail_window.close()
 
+        if self.compose_mail_window:
+            self.compose_mail_window.close()
+
+        if self.edit_mail_schedule_window:
+            self.compose_mail_window.close()
+
         # log out and close connections
         if self._mail_receiver:
             self._mail_receiver.shutdown()
@@ -330,7 +336,7 @@ class MailsTab(QScrollArea):
             self._mail_transmitter.shutdown()
 
     def close(self) -> None:
-        super().close()
-
         # log out and close connections
         self.shutdown()
+
+        super().close()

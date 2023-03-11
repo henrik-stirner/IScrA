@@ -1,6 +1,8 @@
 import logging
 from configparser import ConfigParser
 
+import os
+
 from PyQt6.QtCore import QObject, QThreadPool, QRunnable, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import (
@@ -64,6 +66,17 @@ class WebdriverLauncher(QRunnable):
 class MainWindow(QMainWindow):
     def __init__(self, iserv_username: str, iserv_password: str) -> None:
         super().__init__()
+
+        # ----------
+        # application settings
+        # ----------
+
+        # stylesheet
+        QApplication.instance().setStyleSheet(f'file:///./app/style/{config["settings"]["stylesheet"]}')
+        # QApplication.instance().setStyle('Windows')  # does not look that good to me
+
+        # shutdown
+        QApplication.instance().aboutToQuit.connect(self.shutdown)
 
         # ----------
         # IServ
@@ -141,6 +154,25 @@ class MainWindow(QMainWindow):
             self.exit_action
         )
 
+        # settings menu
+        self.settings_menu = self.menu_bar.addMenu('&Settings')
+        self.style_menu = self.settings_menu.addMenu('&Style')
+
+        self.set_style_actions = []
+        for file in os.listdir('./app/style/'):
+            if not file.endswith('.qss'):
+                continue
+
+            set_style_action = QAction(f'&{file.removesuffix(".qss")}', self)
+            set_style_action.setStatusTip(f'Sets the applications style sheet to <{file}>')
+            set_style_action.triggered.connect(
+                lambda state, stylesheet=file: self._set_stylesheet(stylesheet=stylesheet)
+            )
+
+            self.set_style_actions.append(set_style_action)
+
+        self.style_menu.addActions(self.set_style_actions)
+
         # view menu
         self.view_menu = self.menu_bar.addMenu('&View')
         self.view_menu.addActions([
@@ -191,6 +223,11 @@ class MainWindow(QMainWindow):
         about_dialog = AboutDialog(self)
         about_dialog.exec()
 
+    @staticmethod
+    def _set_stylesheet(stylesheet: str):
+        QApplication.instance().setStyleSheet(f'file:///./app/style/{stylesheet}')
+        config['settings']['stylesheet'] = stylesheet
+
     @pyqtSlot(webdriver.Session)
     def _set_webdriver_session(self, new_webdriver_session: webdriver.Session) -> None:
         self._webdriver_session = new_webdriver_session
@@ -228,7 +265,7 @@ class MainWindow(QMainWindow):
             config.write(config_file)
 
     def close(self) -> None:
-        super().close()
-
         # log out, close connections and close the app if this window is closed
         self.shutdown()
+
+        super().close()
