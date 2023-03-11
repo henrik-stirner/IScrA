@@ -289,8 +289,10 @@ class MainWindow(QMainWindow):
 
         config['position']['x'] = str(self.x()) if self.x() >= 0 else '0'  # to make sure the window appears on screen
         config['position']['y'] = str(self.y()) if self.y() >= 0 else '0'  # ^^^
-        config['size']['w'] = str(self.width()) if self.width() <= screen_width else str(screen_width)
-        config['size']['h'] = str(self.height()) if self.height() <= screen_height else str(screen_height)
+        config['size']['w'] = str(self.width()) if self.width() <= screen_width - self.x() else str(
+            screen_width - self.x())
+        config['size']['h'] = str(self.height()) if self.height() <= screen_height - self.y() else str(
+            screen_height - self.y())
 
         config['view']['full screen'] = '1' if self.isFullScreen() else '0'
         config['view']['maximized'] = '1' if self.isMaximized() else '0'
