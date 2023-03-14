@@ -38,6 +38,9 @@ class Receiver:
         self._imap_connection.starttls()
         self._imap_connection.login(user=iserv_username, password=iserv_password)
 
+        self._current_selection = None
+        self._current_selection_is_readonly = None
+
     def shutdown(self) -> None:
         """close all connections and logout"""
         if self._imap_connection.state == 'SELECTED':
@@ -51,9 +54,25 @@ class Receiver:
     # receiving mails using imap
     # ----------
 
+    def change_selection_if_necessary(self, new_selection: str, readonly: bool = True):
+        if (self._current_selection == new_selection) and (self._current_selection_is_readonly == readonly):
+            return
+
+        if self._imap_connection.state == 'SELECTED':
+            self._imap_connection.close()
+
+        status, response = self._imap_connection.select(new_selection, readonly=readonly)
+        self._current_selection, self._current_selection_is_readonly = new_selection, readonly
+
+        if status.lower() != 'ok':
+            logger.exception(f'Failed to select mailbox {new_selection}.')
+
     def get_available_mailboxes(self) -> [(str, str, str)] or []:
         """returns a list of all available mailboxes"""
         status, response = self._imap_connection.list()
+
+        if status.lower() != 'ok':
+            logger.exception(f'Failed to list mailboxes.')
 
         if not response:
             return []
@@ -70,16 +89,16 @@ class Receiver:
 
     def get_ids_of_unread_mails(self, selection: str = 'INBOX', max_amount=None) -> (str, [str] or []):
         """checks the inbox for unread mails and returns a list of their ids"""
-        self._imap_connection.select(selection, readonly=True)
+        self.change_selection_if_necessary(selection, readonly=True)
 
         status, response = self._imap_connection.search(None, '(UNSEEN)')
+
+        if status.lower() != 'ok':
+            logger.exception(f'Failed to search mailbox {selection} for (UNSEEN).')
 
         mail_ids = []
         for mail_id_block in response:
             mail_ids += mail_id_block.decode().split()
-
-        # close selection
-        self._imap_connection.close()
 
         if max_amount is None:
             # setting the max amount to the number of mails means that all mails will be returned
@@ -92,11 +111,13 @@ class Receiver:
     def get_ids_of_mails(self, selection: str = 'INBOX', max_amount=None) -> (str, [str] or []):
         """checks the inbox for unread mails and returns a list of their ids"""
         status, response = self._imap_connection.select(selection, readonly=True)
+        self._current_selection, self._current_selection_is_readonly = selection, True
+
+        if status.lower() != 'ok':
+            logger.exception(f'Failed to select mailbox {selection}.')
+
         # total number of emails
         number_of_mails = int(response[0])
-
-        # close selection
-        self._imap_connection.close()
 
         if max_amount is None:
             # setting the max amount to the number of mails means that all mails will be returned
@@ -108,7 +129,7 @@ class Receiver:
 
     def minimal_mail_data_by_id(self, selection: str, mail_id: int | str) -> tuple[str, str] | None:
         """gets subject and sender of a mail"""
-        self._imap_connection.select(selection, readonly=True)
+        self.change_selection_if_necessary(selection, readonly=True)
 
         status, response = self._imap_connection.fetch(str(mail_id), '(RFC822.HEADER)')  # fetch only the header
 
@@ -133,7 +154,7 @@ class Receiver:
             self, selection: str, mail_id: int | str
     ) -> tuple[str, str, str, str, tuple[str, str], list[tuple[str, str]]] | None:
         """gets information about and text content of a mail by its id"""
-        self._imap_connection.select(selection, readonly=True)
+        self.change_selection_if_necessary(selection, readonly=True)
 
         status, response = self._imap_connection.fetch(str(mail_id), '(RFC822)')  # fetch the whole mail
 
@@ -199,16 +220,13 @@ class Receiver:
 
             body = (body_plaintext, body_html)
 
-        # close selection when done extracting content from mails
-        self._imap_connection.close()
-
         return date, subject, from_sender, to_receiver, body, attachment_data
 
     def download_mail_attachments_by_id(self, selection: str, mail_id: int | str, to_location: str) -> bool:
         """generator; gets information about and text content of a mail by its id"""
         to_location = to_location.removesuffix('/').removesuffix('\\')
 
-        self._imap_connection.select(selection, readonly=True)
+        self.change_selection_if_necessary(selection, readonly=True)
 
         status, response = self._imap_connection.fetch(str(mail_id), '(RFC822)')  # fetch the whole mail
 
@@ -236,10 +254,21 @@ class Receiver:
             # there is an attachment for us to download
             open(f'{to_location}/{part.get_filename()}', 'wb').write(part.get_payload(decode=True))
 
-        # close selection when done extracting content from mails
-        self._imap_connection.close()
-
         return True
+
+    def mark_as_read_by_id(self, selection: str, mail_id: int | str):
+        self.change_selection_if_necessary(selection, readonly=False)
+
+        self._imap_connection.store(str(mail_id), '+FLAGS', '\SEEN')
+
+    def mark_as_unread_by_id(self, selection: str, mail_id: int | str):
+        self.change_selection_if_necessary(selection, readonly=False)
+
+        self._imap_connection.store(str(mail_id), '-FLAGS', '\SEEN')
+
+    # other flags to store?
+    # too unsafe?
+    # https://stackoverflow.com/questions/17367611/python-imaplib-mark-email-as-unread-or-unseen
 
     # TODO: BODYSTRUCTURE
     # fetch and analyse BODYSTRUCTURE and only download what is really needed:

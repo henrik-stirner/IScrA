@@ -192,6 +192,29 @@ class DisplayMailWindow(QScrollArea):
         self.main_layout.addWidget(QHSeparationLine(line_width=1))
         self.main_layout.addWidget(body_widget)
 
+        # mark as read/ unread button
+        mark_as_read_button = QPushButton(f'Mark as read')
+        mark_as_read_button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
+        mark_as_read_button.clicked.connect(
+            lambda state: self._mail_receiver.mark_as_read_by_id(selection=selection, mail_id=mail_id)
+        )
+
+        mark_as_unread_button = QPushButton(f'Mark as unread')
+        mark_as_unread_button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
+        mark_as_unread_button.clicked.connect(
+            lambda state: self._mail_receiver.mark_as_unread_by_id(selection=selection, mail_id=mail_id)
+        )
+
+        mark_as_read_unread_layout = QHBoxLayout()
+        mark_as_read_unread_layout.addWidget(mark_as_read_button)
+        mark_as_read_unread_layout.addWidget(mark_as_unread_button)
+
+        mark_as_read_unread_widget = QWidget()
+        mark_as_read_unread_widget.setLayout(mark_as_read_unread_layout)
+
+        self.main_layout.addWidget(QHSeparationLine(line_width=1))
+        self.main_layout.addWidget(mark_as_read_unread_widget)
+
         # attachment file names
         if not attachment_data:
             # if there are no attachment files the following code is unnecessary
