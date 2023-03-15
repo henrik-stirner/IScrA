@@ -259,12 +259,12 @@ class Receiver:
     def mark_as_read_by_id(self, selection: str, mail_id: int | str):
         self.change_selection_if_necessary(selection, readonly=False)
 
-        self._imap_connection.store(str(mail_id), '+FLAGS', '\SEEN')
+        self._imap_connection.store(str(mail_id), '+FLAGS', '\\SEEN')
 
     def mark_as_unread_by_id(self, selection: str, mail_id: int | str):
         self.change_selection_if_necessary(selection, readonly=False)
 
-        self._imap_connection.store(str(mail_id), '-FLAGS', '\SEEN')
+        self._imap_connection.store(str(mail_id), '-FLAGS', '\\SEEN')
 
     # other flags to store?
     # too unsafe?

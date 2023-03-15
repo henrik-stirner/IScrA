@@ -1,6 +1,7 @@
 import logging
 from configparser import ConfigParser
 
+from time import time
 from datetime import datetime
 from string import Template
 
@@ -15,6 +16,7 @@ from email.mime.image import MIMEImage
 from email.mime.audio import MIMEAudio
 
 import smtplib
+import imaplib
 
 
 # ----------
@@ -48,6 +50,10 @@ class Transmitter:
         self._smtp_connection = smtplib.SMTP(host=config["server"]["domain"], port=int(config["port"]["smtp"]))
         self._smtp_connection.starttls()
         self._smtp_connection.login(user=iserv_username, password=iserv_password)
+        # an imap connection is needed as well to push mails to INBOX/Sent when sending
+        self._imap_connection = imaplib.IMAP4(host=config["server"]["domain"], port=int(config["port"]["imap"]))
+        self._imap_connection.starttls()
+        self._imap_connection.login(user=iserv_username, password=iserv_password)
 
         # load preambles and epilogues
         self._mail_preamble_plaintext = None
@@ -58,8 +64,13 @@ class Transmitter:
         self.load_extensions()
 
     def shutdown(self) -> None:
-        """close all connections and terminate the smtp session"""
+        """close all connections and terminate the smtp and imap session"""
         self._smtp_connection.quit()
+
+        if self._imap_connection.state == 'SELECTED':
+            self._imap_connection.unselect()  # close election safely
+
+        self._imap_connection.logout()
 
     def load_extensions(self) -> None:
         """loads mail preambles and epilogues and overwrites the currently used ones"""
@@ -167,6 +178,15 @@ class Transmitter:
 
         # send the mail
         self._smtp_connection.send_message(message)
+
+        # append the mail to the INBOX/Sent folder
+        self._imap_connection.append(
+            mailbox='INBOX/Sent',
+            flags='\\SEEN',
+            date_time=imaplib.Time2Internaldate(time()),
+            message=message.as_string().encode('utf-8')
+        )
+
         del message
 
     def send_mail_template(self, to_user: str, subject: str, template: str, formatted_template=False,

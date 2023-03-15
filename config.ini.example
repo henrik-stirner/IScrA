@@ -2,8 +2,10 @@
 domain = domain-name.extension
 
 [port]
-smtp = 123
-imap = 321
+# standard ports
+# smtp often also 25 or 465 or 2525
+smtp = 587
+imap = 143
 
 [domain_extension]
 login = /iserv/auth/login
