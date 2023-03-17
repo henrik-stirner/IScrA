@@ -60,6 +60,7 @@ class MailLoader(QRunnable):
 
         # if there are no mails to display
         if not mail_ids:
+            self.signals.finished.emit()
             return
 
         # there are unread mails, add the new widgets

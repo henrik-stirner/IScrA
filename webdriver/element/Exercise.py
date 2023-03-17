@@ -150,12 +150,22 @@ class Exercise:
 
         try:
             # TODO: what if there are files submitted? Is there still an alert?
-            WebDriverWait(webdriver, self._timeout).until(expected_conditions.presence_of_element_located(
-                (By.XPATH, '//div[@class="alert alert-success"]')))
+            WebDriverWait(webdriver, 0.5).until(expected_conditions.presence_of_element_located(
+                (By.CSS_SELECTOR, 'div.alert_success')))
+        except TimeoutException:
+
+            try:
+                WebDriverWait(webdriver, 0.5).until(expected_conditions.presence_of_element_located(
+                    (By.CSS_SELECTOR, 'div.confirmation-success')))
+            except TimeoutException:
+                self.completed = False
+            else:
+                self.completed = True
+                self.unseen = False
+
+        else:
             self.completed = True
             self.unseen = False
-        except TimeoutException:
-            self.completed = False
 
         if self.tags:
             self.subject = self.search_for_subject_hint(' '.join(self.tags).lower())
