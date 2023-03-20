@@ -1,9 +1,5 @@
 
 
 ----------
----
 mailer instance from ${TIMESTAMP}
----
-This mail was sent automatically.
-If you think that this mail was not intended for you, please contact me.
 ----------
