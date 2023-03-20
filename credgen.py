@@ -103,7 +103,7 @@ def create_dotenv(iserv_username: str) -> None:
     print('Done.')
 
 
-def get_store_iserv_username() -> None:
+def get_store_iserv_username() -> bool:
     # ask the user if they want to skip this step
     print(
         'You can skip this step of the setup. \n'
@@ -115,7 +115,7 @@ def get_store_iserv_username() -> None:
     )
 
     if get_binary_choice('Skip this part of the Setup (y/n)?: '):
-        return
+        return False
 
     # get username
     print('\n\nPlease enter your IServ username below.\n----------')
@@ -123,6 +123,8 @@ def get_store_iserv_username() -> None:
     print('\n\n')
 
     create_dotenv(iserv_username=iserv_username)
+
+    return True
 
 
 # ----------
@@ -178,8 +180,8 @@ def main() -> None:
     create_main_window_ini()
     create_subject_ini()
     create_config_ini()
-    get_store_iserv_username()
-    get_store_iserv_password()
+    if get_store_iserv_username():
+        get_store_iserv_password()
     inform_about_icons()
 
 
