@@ -16,9 +16,6 @@ _CREDGEN.PY_ will do most of the work you.</b>
 - ./app/config/MainWindow.ini
   - initial window size and position
 
-The icons in ./IScrA/assets/icon/ are missing. <br/>
-You will need to add your own icons (listed in ./IScrA/assets/icon/missing.txt) as they will be used for sending notifications (see ./IScrA/core.py). 
-
 ## Features
 - <b>webdriver</b>
   - fetching information about and downloading tasks
