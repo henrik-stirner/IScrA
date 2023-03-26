@@ -158,21 +158,6 @@ def get_store_iserv_password() -> None:
 
 
 # ----------
-# ICONS
-# ./IScrA/assets/icon/missing.txt
-# ----------
-
-
-def inform_about_icons() -> None:
-    print(
-        '\nAlmost done!\n'
-        'The icons that the app uses are missing.'
-        'If you want this app to be able to send notifications, please add them in "./IScrA/assets/icon/".\n'
-        'You can find a list of missing icons at "./IScrA/assets/icon/missing.txt".'
-    )
-
-
-# ----------
 # run
 # ----------
 
@@ -182,7 +167,6 @@ def main() -> None:
     create_config_ini()
     if get_store_iserv_username():
         get_store_iserv_password()
-    inform_about_icons()
 
 
 if __name__ == '__main__':
