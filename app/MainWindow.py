@@ -71,6 +71,11 @@ class MainWindow(QMainWindow):
         # application settings
         # ----------
 
+        self.setWindowTitle('IScrA - Mails')
+
+        # window icon
+        self.setWindowIcon(QIcon('./assets/icon/iscra.ico'))
+
         # stylesheet
         QApplication.instance().setStyleSheet(f'file:///./app/style/{config["settings"]["stylesheet"]}')
         # QApplication.instance().setStyle('Windows')  # does not look that good to me
@@ -199,6 +204,8 @@ class MainWindow(QMainWindow):
         # ----------
 
         self.tab_widget = QTabWidget(self)
+        self.tab_widget.currentChanged.connect(lambda current_index: self.setWindowTitle(
+            f'IScrA - {self.tab_widget.tabText(current_index)}'))
 
         # mails tab
         self.mails_tab = MailsTab(self._iserv_username, self._iserv_password)

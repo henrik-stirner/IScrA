@@ -1,7 +1,7 @@
 import logging
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import (
     QApplication, QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QLineEdit,
     QTextEdit, QFileDialog
@@ -41,7 +41,10 @@ class ComposeMailWindow(QScrollArea):
         # window setting
         # ----------
 
-        self.setWindowTitle('IScrA')
+        self.setWindowTitle('IScrA - Compose Mail')
+
+        # window icon
+        self.setWindowIcon(QIcon('./assets/icon/iscra.ico'))
 
         # ----------
         # actions

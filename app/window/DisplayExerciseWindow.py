@@ -4,7 +4,7 @@ from datetime import datetime
 import webbrowser
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import (
     QApplication, QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QFileDialog
 )
@@ -44,7 +44,10 @@ class DisplayExerciseWindow(QScrollArea):
         # window setting
         # ----------
 
-        self.setWindowTitle('IScrA')
+        self.setWindowTitle('IScrA - Display Exercise')
+
+        # window icon
+        self.setWindowIcon(QIcon('./assets/icon/iscra.ico'))
 
         # ----------
         # actions

@@ -1,7 +1,7 @@
 import logging
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import (
     QApplication, QScrollArea, QWidget, QVBoxLayout, QPushButton, QSizePolicy, QTextEdit
 )
@@ -30,7 +30,10 @@ class MailScheduleWindow(QScrollArea):
         # window settings
         # ----------
 
-        self.setWindowTitle('Mail Schedule')
+        self.setWindowTitle('IScrA - Edit Mail Schedule')
+
+        # window icon
+        self.setWindowIcon(QIcon('./assets/icon/iscra.ico'))
 
         # ----------
         # actions
