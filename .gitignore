@@ -16,9 +16,6 @@ venv/
 *.log
 *.log.*
 
-# icons from google fonts
-**/assets/icon/*.ico
-
 # private user data
 *.env
 *.ini
