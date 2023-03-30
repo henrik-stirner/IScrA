@@ -119,7 +119,7 @@ class Text:
         text_document_rows = webdriver.find_element(By.TAG_NAME, 'tbody').find_elements(By.TAG_NAME, 'tr')
         for text_document_row in text_document_rows:
             text_document_title_link = text_document_row.find_element(
-                    By.XPATH, './/td[@class="iserv-admin-list-field-textarea"]').find_element(By.TAG_NAME, 'a')
+                    By.XPATH, './/td[2]').find_element(By.TAG_NAME, 'a')
             if (self.title != text_document_title_link.text) and (
                     self.remote_location != text_document_title_link.get_attribute('href')):
                 continue
@@ -127,12 +127,12 @@ class Text:
             self.creation_date = datetime.strptime(
                 text_document_row.find_element(
                     # second iserv-admin-list-field-datetime field?
-                    By.XPATH, '//td[@class="iserv-admin-list-field-datetime"]').text,
+                    By.XPATH, '//td[5]').text,
                 '%d.%m.%Y %H:%M'
             )
             self.last_modification_date = datetime.strptime(
                 text_document_row.find_element(
-                    By.XPATH, '//td[@class="iserv-admin-list-field-datetime sorting_1"]').text,
+                    By.XPATH, '//td[4]').text,
                 '%d.%m.%Y %H:%M'
             )
 
@@ -146,7 +146,10 @@ class Text:
         if from_location.startswith('https://'):
             if webdriver is None:
                 raise ValueError('A webdriver is needed to fetch from a remote location.')
-            self._fetch_remote(webdriver, from_location)
+            try:
+                self._fetch_remote(webdriver, from_location)
+            except Exception as exception:
+                print(exception)
         else:
             self._fetch_local(from_location)
 

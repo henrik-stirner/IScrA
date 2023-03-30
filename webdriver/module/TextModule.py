@@ -51,6 +51,9 @@ class TextModule(ModuleBase):
 
         self.remote_text_locations = {}
         for text_table_row in text_table_rows:
-            text_link = text_table_row.find_element(By.XPATH, './td[2]/a')
-            # name: remote_location
-            self.remote_text_locations[text_link.text] = text_link.get_attribute('href')
+            try:
+                text_link = text_table_row.find_element(By.XPATH, './td[2]/a')
+                # name: remote_location
+                self.remote_text_locations[text_link.text] = text_link.get_attribute('href')
+            except Exception as exception:
+                logger.info(exception)
