@@ -85,9 +85,16 @@ class Text:
         self.remote_location_of_actual_etherpad = webdriver.find_element(
             By.XPATH, '//iframe[@id="etherpad"]').get_attribute('src')
 
+        # remove hidden attribute to make readable
+        webdriver.execute_script(
+            'arguments[0].setAttribute("class","");',
+            webdriver.find_element(By.XPATH, '//div[@id="etherpad-crud-show" and @class="hidden"]')
+        )
+
         text_data_dd_list = webdriver.find_elements(By.XPATH, '//dd[@class="col-sm-8"]')
 
         self.owner = text_data_dd_list[0].text
+        print("OWNER:", self.owner)
 
         shared_with_users_li_list = text_data_dd_list[1].find_element(By.TAG_NAME, 'ul').find_elements(
             By.TAG_NAME, 'li')
@@ -100,15 +107,22 @@ class Text:
                     span.get_attribute('title') for span in li.find_elements(By.TAG_NAME, 'span')
                     if span.get_attribute('title')
                 ]
+        print("SHARED WITH:", self.shared_with_users)
 
         self.tags = [
             a.text for a in text_data_dd_list[2].find_elements(
                 By.XPATH, '//a[@class="label label-info tag-link mr-1"]')
         ]
+        print("TAGS:", self.tags)
 
-        # TODO: only works if the language is set to German ('Details zu ')
-        self.title = webdriver.find_element(By.TAG_NAME, 'h1').text.removeprefix('Details zu ')
+        # remove hidden attribute to make readable
+        webdriver.execute_script(
+            'arguments[0].setAttribute("class","");',
+            webdriver.find_element(By.ID, 'topbar-title')
+        )
+        self.title = webdriver.find_element(By.ID, 'topbar-title').find_element(By.TAG_NAME, 'span').text
         self.safe_title = make_alphanumeric(self.title)
+        print("TITLE:", self.title, self.safe_title)
 
         webdriver.get(f'https://{config["server"]["domain"]}{config["domain_extension"]["text"]}')
 
