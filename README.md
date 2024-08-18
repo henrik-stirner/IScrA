@@ -1,6 +1,7 @@
 ![badge: python](https://img.shields.io/badge/Lang-Python-informational?style=for-the-badge&logo=Python&logoColor=white&color=fcd132)
 
-WORK IN PROGRESS
+~WORK IN PROGRESS~
+"DISCONTINUED" (as if someone ever used this)
 
 # IScrA - IServ Scraping Automations
 <b>Make sure to add the missing dotenv and config files before running.<br/>
