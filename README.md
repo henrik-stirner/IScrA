@@ -1,6 +1,6 @@
 ![badge: python](https://img.shields.io/badge/Lang-Python-informational?style=for-the-badge&logo=Python&logoColor=white&color=fcd132)
 
-Why is there a webdriver, a webscraper, and extra e-mail client??
+Why is there a webdriver, a webscraper, and an extra e-mail client??
 
 
 # webscraping automations for IServ
